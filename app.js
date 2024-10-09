@@ -18,7 +18,7 @@ connectDB();
 
 //Habilitar Cors
 app.use(cors({
-    origin: 'https://instituciones-v1.vercel.app',
+    origin: ['https://instituciones-v1.vercel.app', 'http://localhost:8000'],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
@@ -36,12 +36,16 @@ app.use('/api/instituciones', institucionRoutes);
 swaggerDocs(app);
 
 // Definir puerto
-if (require.main === module) {
+if (process.env.VERCEL) {
+    //Exporta la aplicación para su uso en otros modulos
+    module.exports =app;//permite que vercel ejecute el servidor
+}else {
+    //iniciar el servidor localmente
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => console.log(`Servidor corriendo en el puerto ${PORT}`));
-    
+
 }
 
 //Exporta la aplicación para su uso en otros modulos
-module.exports = app;//permite que vercel ejecute el servidor
+//module.exports = app;//permite que vercel ejecute el servidor
 

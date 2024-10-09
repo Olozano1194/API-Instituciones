@@ -13,6 +13,8 @@ const connectDB = async () => {
         const connection = await mongoose.connect(process.env.MONGO_URI, {
             useNewUrlParser: true,
             useUnifiedTopology: true,
+            bufferCommands: false,
+            serverSelectionTimeoutMS: 5000
         });
         cachedDb = connection;
         console.log('Conectado a la base de datos MongoDB');
