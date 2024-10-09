@@ -31,9 +31,21 @@ app.get('/', (req, res) => {
     res.send('API de Instituciones está funcionando correctamente');
 });
 
+app.use('/api/instituciones', (req, res, next) => {
+    // Log de la solicitud para depuración
+    console.log(`${req.method} ${req.url}`);
+    next();
+});
+
 // Definir rutas
 const institucionRoutes = require('./routes/institucionRoutes');
 app.use('/api/instituciones', institucionRoutes);
+
+// Middleware para manejar errores
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).send({ message: 'Algo salió mal!', error: err.message });
+});
 
 // Iniciar Swagger en el puerto 5000
 swaggerDocs(app);
