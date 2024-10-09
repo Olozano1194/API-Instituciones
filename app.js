@@ -6,8 +6,8 @@ if (require.main === module) {
 
 const express = require('express');
 const dotenv = require('dotenv');
-const connectDB = require('../api-instituciones/config/db');
-const swaggerDocs = require('../api-instituciones/config/swagger');
+const connectDB = require('./config/db');
+const swaggerDocs = require('./config/swagger');
 const cors = require('cors'); 
 
 dotenv.config();
@@ -26,10 +26,13 @@ app.use(cors({
 // Middleware para analizar JSON
 app.use(express.json());
 
-
+//ruta para la raiz
+app.get('/', (req, res) => {
+    res.send('API de Instituciones está funcionando correctamente');
+});
 
 // Definir rutas
-const institucionRoutes = require('../api-instituciones/routes/institucionRoutes');
+const institucionRoutes = require('./routes/institucionRoutes');
 app.use('/api/instituciones', institucionRoutes);
 
 // Iniciar Swagger en el puerto 5000
