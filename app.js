@@ -1,3 +1,10 @@
+if (require.main === module) {
+    //valida si el archivo es el principal para no cargar las variables de entorno en vercel
+    require('dotenv').config();
+        
+}
+
+
 const express = require('express');
 const dotenv = require('dotenv');
 const connectDB = require('../api-instituciones/config/db');
@@ -30,5 +37,12 @@ app.use('/api/instituciones', institucionRoutes);
 swaggerDocs(app);
 
 // Definir puerto
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Servidor corriendo en el puerto ${PORT}`));
+if (require.main === module) {
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => console.log(`Servidor corriendo en el puerto ${PORT}`));
+    
+}
+
+//Exporta la aplicación para su uso en otros modulos
+module.exports = app;//permite que vercel ejecute el servidor
+
