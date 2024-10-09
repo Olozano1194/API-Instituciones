@@ -4,7 +4,6 @@ if (require.main === module) {
         
 }
 
-
 const express = require('express');
 const dotenv = require('dotenv');
 const connectDB = require('../api-instituciones/config/db');
@@ -19,7 +18,7 @@ connectDB();
 
 //Habilitar Cors
 app.use(cors({
-    origin: '*',
+    origin: 'https://instituciones-v1.vercel.app',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
