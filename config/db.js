@@ -5,9 +5,9 @@ dotenv.config();
 let cachedDb = null;
 
 const connectDB = async () => {
-    if (cachedDb) {
-        return cachedDb;        
-    }
+    // if (cachedDb) {
+    //     return cachedDb;        
+    // }
 
     try {
         const connection = await mongoose.connect(process.env.MONGO_URI, {
@@ -16,12 +16,12 @@ const connectDB = async () => {
             bufferCommands: false,
             serverSelectionTimeoutMS: 30000
         });
-        cachedDb = connection;
+        //cachedDb = connection;
         console.log('Conectado a la base de datos MongoDB');
         return connection;
     } catch (error) {
         console.error('Error al conectar a la base de datos', error);
-        process.exit(1); 
+        //process.exit(1); 
     }
 };
 
