@@ -7,7 +7,7 @@ if (require.main === module) {
 const express = require('express');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
-const disconnectDB = require('./config/db');
+//const disconnectDB = require('./config/db');
 const swaggerDocs = require('./config/swagger');
 const cors = require('cors'); 
 
@@ -15,7 +15,7 @@ dotenv.config();
 const app = express();
 
 // Conectar a la base de datos
-connectDB();
+await connectDB();
 
 //Habilitar Cors
 app.use(cors({
@@ -32,11 +32,11 @@ app.get('/', (req, res) => {
     res.send('API de Instituciones está funcionando correctamente');
 });
 
-app.get('/connectdb', async (req, res) => {
-    await disconnectDB();
-    await connectDB();
-    res.send('Conectado a la base de datos');
-});
+// app.get('/connectdb', async (req, res) => {
+//     await disconnectDB();
+//     await connectDB();
+//     res.send('Conectado a la base de datos');
+// });
 
 app.use('/api/instituciones', (req, res, next) => {
     // Log de la solicitud para depuración
