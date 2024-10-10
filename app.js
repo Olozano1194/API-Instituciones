@@ -14,7 +14,7 @@ dotenv.config();
 const app = express();
 
 // Conectar a la base de datos
-connectDB();
+//connectDB();
 
 //Habilitar Cors
 app.use(cors({
@@ -26,17 +26,23 @@ app.use(cors({
 // Middleware para analizar JSON
 app.use(express.json());
 
+//Middleware para conectar a la base de datos antes de cualquier operación
+app.use(async (req, res, next) => {
+    await connectDB();
+    next();
+});
+
 //ruta para la raiz
 app.get('/', (req, res) => {
     res.send('API de Instituciones está funcionando correctamente');
 });
 
 //se hizo esta modificación para poder que funcionara la conexión de vercel con mongodb
-app.get('/connectdb', async (req, res) => {
-    await disconnectDB();
-    await connectDB();
-    res.send('Conectado a la base de datos');
-});
+// app.get('/connectdb', async (req, res) => {
+//     await disconnectDB();
+//     await connectDB();
+//     res.send('Conectado a la base de datos');
+// });
 
 app.use('/api/instituciones', (req, res, next) => {
     // Log de la solicitud para depuración
