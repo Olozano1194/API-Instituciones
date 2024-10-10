@@ -31,7 +31,7 @@ app.get('/', (req, res) => {
     res.send('API de Instituciones está funcionando correctamente');
 });
 
-app.get('/connectdb', (res, req) => {
+app.get('/connectdb', (req, res) => {
     connectDB();
     res.send('Conectado a la base de datos');
 });
