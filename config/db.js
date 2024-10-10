@@ -14,7 +14,7 @@ const connectDB = async () => {
             useNewUrlParser: true,
             useUnifiedTopology: true,
             bufferCommands: false,
-            serverSelectionTimeoutMS: 5000
+            serverSelectionTimeoutMS: 30000
         });
         cachedDb = connection;
         console.log('Conectado a la base de datos MongoDB');
