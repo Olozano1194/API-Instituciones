@@ -31,6 +31,11 @@ app.get('/', (req, res) => {
     res.send('API de Instituciones está funcionando correctamente');
 });
 
+app.get('/connectdb', (res, req) => {
+    connectDB();
+    res.send('Conectado a la base de datos');
+});
+
 app.use('/api/instituciones', (req, res, next) => {
     // Log de la solicitud para depuración
     console.log(`${req.method} ${req.url}`);
