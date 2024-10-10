@@ -1,7 +1,6 @@
 if (require.main === module) {
     //valida si el archivo es el principal para no cargar las variables de entorno en vercel
     require('dotenv').config();
-        
 }
 
 const express = require('express');
@@ -15,7 +14,7 @@ dotenv.config();
 const app = express();
 
 // Conectar a la base de datos
-await connectDB();
+connectDB();
 
 //Habilitar Cors
 app.use(cors({
@@ -32,6 +31,7 @@ app.get('/', (req, res) => {
     res.send('API de Instituciones está funcionando correctamente');
 });
 
+//se hizo esta modificación para poder que funcionara la conexión de vercel con mongodb
 app.get('/connectdb', async (req, res) => {
     await disconnectDB();
     await connectDB();
