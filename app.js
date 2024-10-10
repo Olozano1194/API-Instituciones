@@ -7,6 +7,7 @@ if (require.main === module) {
 const express = require('express');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
+const disconnectDB = require('./config/db');
 const swaggerDocs = require('./config/swagger');
 const cors = require('cors'); 
 
@@ -31,8 +32,9 @@ app.get('/', (req, res) => {
     res.send('API de Instituciones está funcionando correctamente');
 });
 
-app.get('/connectdb', (req, res) => {
-    connectDB();
+app.get('/connectdb', async (req, res) => {
+    await disconnectDB();
+    await connectDB();
     res.send('Conectado a la base de datos');
 });
 

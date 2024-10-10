@@ -25,4 +25,14 @@ const connectDB = async () => {
     }
 };
 
+const disconnectDB = async () => {
+    await mongoose.disconnect().then(() => {
+        console.log('Desconectado de la base de datos');
+    }).catch((error) => {
+        console.error('Error al desconectar de la base de datos', error);
+    });
+
+}
+module.exports = disconnectDB;
+
 module.exports = connectDB;
