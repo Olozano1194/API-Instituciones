@@ -6,7 +6,6 @@ if (require.main === module) {
 const express = require('express');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
-const disconnectDB = require('./config/db');
 const swaggerDocs = require('./config/swagger');
 const cors = require('cors'); 
 
