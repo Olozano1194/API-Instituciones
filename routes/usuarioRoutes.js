@@ -80,7 +80,7 @@ router.post('/', createUsuario);
  *       404:
  *         description: Usuario no encontrado
  */
-router.get('/:id', getUsuariosById);
+router.get('/:id', getUsuarioById);
 
 /**
  * @swagger
@@ -113,7 +113,7 @@ router.get('/:id', getUsuariosById);
  *       404:
  *         description: Usuario no encontrado
  */
-router.put('/:id', updateInstitucion);
+router.put('/:id', updateUsuario);
 
 /**
  * @swagger
