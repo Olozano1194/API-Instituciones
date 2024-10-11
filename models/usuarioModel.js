@@ -4,7 +4,7 @@ const UsuarioModel = new mongoose.Schema({
     nombre: String,
     apellido: String,
     email: String,
-    roles: String,
+    rol: String,
     password: String
 });
 

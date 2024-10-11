@@ -43,15 +43,20 @@ app.get('/', (req, res) => {
 //     res.send('Conectado a la base de datos');
 // });
 
-app.use('/api/instituciones', (req, res, next) => {
-    // Log de la solicitud para depuración
-    console.log(`${req.method} ${req.url}`);
-    next();
-});
+// app.use('/api/instituciones', (req, res, next) => {
+//     // Log de la solicitud para depuración
+//     console.log(`${req.method} ${req.url}`);
+//     next();
+// });
 
 // Definir rutas
+//Ruta para las instituciones
 const institucionRoutes = require('./routes/institucionRoutes');
 app.use('/api/instituciones', institucionRoutes);
+
+//Rutas para los usuarios
+const usuarioRoutes = require('./routes/usuarioRoutes');
+app.use('/api/usuarios', usuarioRoutes);
 
 // Middleware para manejar errores
 app.use((err, req, res, next) => {
