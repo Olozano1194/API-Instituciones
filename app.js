@@ -43,11 +43,11 @@ app.get('/', (req, res) => {
 //     res.send('Conectado a la base de datos');
 // });
 
-// app.use('/api/instituciones', (req, res, next) => {
-//     // Log de la solicitud para depuración
-//     console.log(`${req.method} ${req.url}`);
-//     next();
-// });
+app.use('/api/instituciones', (req, res, next) => {
+    // Log de la solicitud para depuración
+    console.log(`${req.method} ${req.url}`);
+    next();
+});
 
 // Definir rutas
 //Ruta para las instituciones
