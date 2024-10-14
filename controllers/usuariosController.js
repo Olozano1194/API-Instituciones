@@ -1,4 +1,4 @@
-const Usuario = require('../models/usuarioModel.js');
+const Usuario = require('../models/usuarioModel');
 
 // Obtener todas los Usuarios
 const getUsuarios = async (req, res) => {
@@ -12,10 +12,10 @@ const getUsuarios = async (req, res) => {
 
 // Crear una nuevo Usuario
 const createUsuario = async (req, res) => {
-    const nuevaUsuario = new Usuario(req.body);
+    const nuevoUsuario = new Usuario(req.body);
     try {
-        const usuarioGuardada = await nuevaUsuario.save();
-        res.status(201).json(usuarioGuardada);
+        const usuarioGuardado = await nuevoUsuario.save();
+        res.status(201).json(usuarioGuardado);
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
@@ -28,7 +28,7 @@ const getUsuarioById = async (req, res) => {
         if (!usuario) {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
-        res.status(200).json(institucion);
+        res.status(200).json(usuario);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
