@@ -1,11 +1,13 @@
 const express = require('express');
+const protegerRutas = require('../routes/proteccionRutas/authMiddleware.js');
 const router = express.Router();
 const {
     getUsuarios,
     createUsuario,
     getUsuarioById,
     updateUsuario,
-    deleteUsuario
+    deleteUsuario,
+    loginUsuario
 } = require('../controllers/usuariosController.js');
 
 /**
@@ -14,7 +16,7 @@ const {
  *   name: Usuarios
  *   description: API para gestionar Usuarios
  */
-
+router.post('/login', loginUsuario);
 /**
  * @swagger
  * /api/usuarios:
@@ -31,7 +33,7 @@ const {
  *               items:
  *                 $ref: '#/components/schemas/Institucion'
  */
-router.get('/', getUsuarios);
+router.get('/', protegerRutas,  getUsuarios);
 
 /**
  * @swagger
@@ -55,7 +57,7 @@ router.get('/', getUsuarios);
  *       400:
  *         description: Error en la creación del usuario
  */
-router.post('/', createUsuario);
+router.post('/', protegerRutas, createUsuario);
 
 /**
  * @swagger
@@ -80,7 +82,7 @@ router.post('/', createUsuario);
  *       404:
  *         description: Usuario no encontrado
  */
-router.get('/:id', getUsuarioById);
+router.get('/:id', protegerRutas, getUsuarioById);
 
 /**
  * @swagger
@@ -113,7 +115,7 @@ router.get('/:id', getUsuarioById);
  *       404:
  *         description: Usuario no encontrado
  */
-router.put('/:id', updateUsuario);
+router.put('/:id', protegerRutas, updateUsuario);
 
 /**
  * @swagger
@@ -134,6 +136,6 @@ router.put('/:id', updateUsuario);
  *       404:
  *         description: Usuario no encontrado
  */
-router.delete('/:id', deleteUsuario);
+router.delete('/:id', protegerRutas, deleteUsuario);
 
 module.exports = router;
