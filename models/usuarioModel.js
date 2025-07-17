@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
+//const bcrypt = require('bcrypt');
 
 const UsuarioModel = new mongoose.Schema({
     nombre: String,
@@ -7,6 +7,7 @@ const UsuarioModel = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     rol: String,
     password: { type: String, require: true },
+    idinstitucion: Number,
 });
 
 const usuario = mongoose.model('Usuario', UsuarioModel, 'usuarios');
