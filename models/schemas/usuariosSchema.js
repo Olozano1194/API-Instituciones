@@ -2,30 +2,33 @@
  * @swagger
  * components:
  *   schemas:
- *     Institucion:
+ *     Usuario:
  *       type: object
  *       required:
- *         - name *         
- *         - email
- *         - password
+ *         - nombre 
+ *         - apellido         
+ *         - email *
+ *         - password *
  *         - idrole
  *         - idinstitucion
  *       properties:
- *         name:
+ *         nombre:
  *           type: string
- *           description: El nombre del usuario *         
+ *           description: El nombre del usuario        
  *         email:
  *           type: string
  *           format: email
- *           description: El correo electrónico del usuario
+ *           description: El correo electrónico del usuario *
  *         password:
  *           type: string
- *           description: La contraseña del usuario
- *         idrole:
- *           type: integer
+ *           description: La contraseña del usuario *
+ *         rol:
+ *           type: string
+ *           default: "usuario"
  *           description: El rol del usuario
  *         idinstitucion:
  *           type: integer
+ *           nullable: true
  *           description: La institucion del usuario *         
  *       example:
  *         name: "Institución Educativa La Esperanza" *
@@ -35,15 +38,16 @@
  *         idinstitucion: 102 *         
  */
 
-module.exports = {
-    Institucion: {
-        type: "object",
-        properties: {
-            name: { type: "string" },
-            email: { type: "string", format: "email" },
-            password: { type: "integer" },
-            rol: { type: "integer" },
-            idinstitucion: { type: "integer" },            
-        },
-    },
-};
+// module.exports = {
+//     Usuario: {
+//         type: "object",
+//         properties: {
+//             nombre: { type: "string" },
+//             apellido: { type: "string" },
+//             email: { type: "string", format: "email" },
+//             password: { type: "string" },
+//             rol: { type: "string" },
+//             idinstitucion: { type: "integer" },            
+//         },
+//     },
+// };

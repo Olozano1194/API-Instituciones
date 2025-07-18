@@ -14,12 +14,12 @@ const {
  * @swagger
  * tags:
  *   name: Usuarios
- *   description: API para gestionar Usuarios
+ *   description: API para gestionar Usuarios de las instituciones educativas
  */
 router.post('/login', loginUsuario);
 /**
  * @swagger
- * /api/usuarios:
+ * /api/usuario:
  *   get:
  *     summary: Obtiene todos los usuarios
  *     tags: [Usuarios]
@@ -31,13 +31,13 @@ router.post('/login', loginUsuario);
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/Institucion'
+ *                 $ref: '#/components/schemas/usuariosSchema'
  */
 router.get('/', protegerRutas,  getUsuarios);
 
 /**
  * @swagger
- * /api/usuarios:
+ * /api/usuario:
  *   post:
  *     summary: Crea un nuevo usuario
  *     tags: [Usuarios]
@@ -46,22 +46,22 @@ router.get('/', protegerRutas,  getUsuarios);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Usuario'
+ *             $ref: '#/components/schemas/schemas/usuarioSchema'
  *     responses:
  *       201:
- *         description: Usuario creada exitosamente
+ *         description: Usuario creado exitosamente
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Usuario'
+ *               $ref: '#/components/schemas/usuarioSchema'
  *       400:
  *         description: Error en la creación del usuario
  */
-router.post('/', protegerRutas, createUsuario);
+router.post('/', createUsuario);
 
 /**
  * @swagger
- * /api/usuarios/{id}:
+ * /api/usuario/{id}:
  *   get:
  *     summary: Obtiene un usuario por su ID
  *     tags: [Usuarios]
@@ -74,11 +74,11 @@ router.post('/', protegerRutas, createUsuario);
  *         description: ID del usuario
  *     responses:
  *       200:
- *         description: Usuario encontrada
+ *         description: Usuario encontrado
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Usuario'
+ *               $ref: '#/components/schemas/usuarioSchema'
  *       404:
  *         description: Usuario no encontrado
  */
@@ -86,7 +86,7 @@ router.get('/:id', protegerRutas, getUsuarioById);
 
 /**
  * @swagger
- * /api/usuarios/{id}:
+ * /api/usuario/{id}:
  *   put:
  *     summary: Actualiza un usuario por su ID
  *     tags: [Usuarios]
@@ -102,14 +102,14 @@ router.get('/:id', protegerRutas, getUsuarioById);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Usuario'
+ *             $ref: '#/components/schemas/usuarioSchema'
  *     responses:
  *       200:
  *         description: Usuario actualizado
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Usuario'
+ *               $ref: '#/components/schemas/usuarioSchema'
  *       400:
  *         description: Error en la actualización del usuario
  *       404:
@@ -119,7 +119,7 @@ router.put('/:id', protegerRutas, updateUsuario);
 
 /**
  * @swagger
- * /api/usuarios/{id}:
+ * /api/usuario/{id}:
  *   delete:
  *     summary: Elimina un usuario por su ID
  *     tags: [es]
@@ -136,6 +136,6 @@ router.put('/:id', protegerRutas, updateUsuario);
  *       404:
  *         description: Usuario no encontrado
  */
-router.delete('/:id', protegerRutas, deleteUsuario);
+router.delete('/usuarios/:id', protegerRutas, deleteUsuario);
 
 module.exports = router;

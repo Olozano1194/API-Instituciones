@@ -1,8 +1,3 @@
-if (require.main === module) {
-    //valida si el archivo es el principal para no cargar las variables de entorno en vercel
-    require('dotenv').config();
-}
-
 const express = require('express');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
@@ -16,39 +11,64 @@ const app = express();
 // Conectar a la base de datos
 // connectDB();
 
-//Habilitar Cors
-app.use(cors({
-    origin: ['https://instituciones-v1.vercel.app', 'http://localhost:5001'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
 // Middleware para analizar JSON
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+//Habilitar Cors
+app.use(cors());
+app.options('*', (req, res) => {
+    res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With, Accept');
+    res.sendStatus(200);
+});
+
+// app.use((req, res, next) => {
+//     console.log('\n--- Nueva Petición ---');
+//     console.log('Método:', req.method);
+//     console.log('URL:', req.url);
+//     console.log('Headers:', req.headers);
+//     if (req.method !== 'OPTIONS') {
+//         console.log('Body:', req.body);
+//     }
+//     next();
+// });
+
+//Middleware para todas las rutas
+
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With, Accept');
+    next();
+});
 
 //Middleware para conectar a la base de datos antes de cualquier operación
 app.use(async (req, res, next) => {
-    await connectDB();
-    next();
+    try {
+        await connectDB();
+        next();        
+    } catch (error) {
+        console.error('Error de conección a la base de datos:', error);
+        res.status(500).json({ message: 'Error de conección a la base de datos' });        
+    }
+    
 });
 
-//ruta para la raiz
-// app.get('/', (req, res) => {
-//     res.send('API de Instituciones está funcionando correctamente');
+//Middleware de logging
+// app.use((req, res, next) => {
+//     console.log(`${req.method} ${req.url}`);
+//     console.log('Headers:', req.headers);
+//     console.log('Body:', req.body);
+//     next();
 // });
 
-//se hizo esta modificación para poder que funcionara la conexión de vercel con mongodb
-// app.get('/connectdb', async (req, res) => {
-//     await disconnectDB();
-//     await connectDB();
-//     res.send('Conectado a la base de datos');
+// app.use('/api/instituciones', (req, res, next) => {
+//     // Log de la solicitud para depuración
+//     console.log(`${req.method} ${req.url}`);
+//     next();
 // });
-
-app.use('/api/instituciones', (req, res, next) => {
-    // Log de la solicitud para depuración
-    console.log(`${req.method} ${req.url}`);
-    next();
-});
 
 // Definir rutas
 //Ruta para las instituciones
@@ -62,7 +82,7 @@ const municipioRoutes = require('./routes/municipioRoutes');
 app.use('/api/municipios', municipioRoutes);
 //Rutas para los usuarios
 const usuarioRoutes = require('./routes/usuarioRoutes');
-app.use('/api/usuarios', usuarioRoutes);
+app.use('/api/usuario', usuarioRoutes);
 
 // Middleware para manejar errores
 app.use((err, req, res, next) => {
@@ -101,9 +121,5 @@ if (process.env.VERCEL) {
 }else {
     //iniciar el servidor localmente
     const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => console.log(`Servidor corriendo en el puerto ${PORT}`));
-}
-
-//Exporta la aplicación para su uso en otros modulos
-//module.exports = app;//permite que vercel ejecute el servidor
-
+    app.listen(PORT, () => console.log(`Servidor corriendo en el puerto http://localhost:${PORT}`));
+};
