@@ -82,11 +82,20 @@ const createUsuario = async (req, res) => {
 // Obtener un Usuario por ID
 const getUsuarioById = async (req, res) => {
     try {
-        const usuario = await Usuario.findById(req.params.id);
+        const userId = req.user.id;
+        const usuario = await Usuario.findById(userId);
         if (!usuario) {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
-        res.status(200).json(usuario);
+        res.status(200).json({
+            user: {
+                id: usuario._id,
+                nombre: usuario.nombre,
+                apellido: usuario.apellido,
+                email: usuario.email,
+                rol: usuario.rol,
+            }
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -131,7 +140,7 @@ const loginUsuario = async (req, res) => {
         }
         
         //Verificamos si la contraseña es correcta
-        const isValidPassword = bcrypt.compare(password,  usuario.password);        
+        const isValidPassword = await bcrypt.compare(password,  usuario.password);        
         if (!isValidPassword) {
             return res.status(400).json({ message: 'Credenciales inválidas' });
         }
@@ -140,7 +149,17 @@ const loginUsuario = async (req, res) => {
             id: usuario._id }, 
             process.env.SECRET_KEY, { expiresIn: '24h' });
 
-        res.status(200).json({ message: 'Inicio de sesión exitoso', token });
+        res.status(200).json({ 
+            message: 'Inicio de sesión exitoso', 
+            token
+            // user: {
+            //     id: usuario._id,
+            //     nombre: usuario.nombre,
+            //     apellido: usuario.apellido,
+            //     email: usuario.email,
+            //     rol: usuario.rol
+            // } 
+        });
 
     }catch (err) {
         res.status(500).json({ 
