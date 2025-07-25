@@ -4,6 +4,7 @@ const connectDB = require('./config/db');
 const cors = require('cors');
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsdoc = require("swagger-jsdoc");
+const initRoles = require('./config/initRoles');
 
 dotenv.config();
 const app = express();
@@ -24,36 +25,23 @@ app.options('*', (req, res) => {
     res.sendStatus(200);
 });
 
-// app.use((req, res, next) => {
-//     console.log('\n--- Nueva Petición ---');
-//     console.log('Método:', req.method);
-//     console.log('URL:', req.url);
-//     console.log('Headers:', req.headers);
-//     if (req.method !== 'OPTIONS') {
-//         console.log('Body:', req.body);
-//     }
-//     next();
-// });
+app.use((req, res, next) => {
+    console.log('\n--- Nueva Petición ---');
+    console.log('Método:', req.method);
+    console.log('URL:', req.url);
+    console.log('Headers:', req.headers);
+    if (req.method !== 'OPTIONS') {
+        console.log('Body:', req.body);
+    }
+    next();
+});
 
 //Middleware para todas las rutas
-
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With, Accept');
     next();
-});
-
-//Middleware para conectar a la base de datos antes de cualquier operación
-app.use(async (req, res, next) => {
-    try {
-        await connectDB();
-        next();        
-    } catch (error) {
-        console.error('Error de conección a la base de datos:', error);
-        res.status(500).json({ message: 'Error de conección a la base de datos' });        
-    }
-    
 });
 
 //Middleware de logging
@@ -83,6 +71,9 @@ app.use('/api/municipios', municipioRoutes);
 //Rutas para los usuarios
 const usuarioRoutes = require('./routes/usuarioRoutes');
 app.use('/api/usuario', usuarioRoutes);
+//Rutas para los roles
+const rolRoutes = require('./routes/rolRoutes');
+app.use('/api/roles', rolRoutes);
 
 // Middleware para manejar errores
 app.use((err, req, res, next) => {
@@ -114,12 +105,40 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 // Servir documentación Swagger en /api-docs
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// Definir puerto
-if (process.env.VERCEL) {
-    //Exporta la aplicación para su uso en otros modulos
-    module.exports =app;//permite que vercel ejecute el servidor
-}else {
-    //iniciar el servidor localmente
-    const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => console.log(`Servidor corriendo en el puerto http://localhost:${PORT}`));
+const startServer = async () => {
+    try {
+        //Middleware para conectar a la base de datos antes de cualquier operación
+        // app.use(async (req, res, next) => {
+        //     try {
+        //         await connectDB();
+        //         next();        
+        //     } catch (error) {
+        //         console.error('Error de conección a la base de datos:', error);
+        //         res.status(500).json({ message: 'Error de conección a la base de datos' });        
+        //     }
+            
+        // });
+        await connectDB();
+        // Esperamos un momento para asegurar que la base de datos esté lista
+        setTimeout(async () => {
+            await initRoles();
+        }, 2000)
+
+        // Definir puerto
+        if (process.env.VERCEL) {
+            //Exporta la aplicación para su uso en otros modulos
+            module.exports =app;//permite que vercel ejecute el servidor
+        }else {
+            //iniciar el servidor localmente
+            const PORT = process.env.PORT || 5000;
+            app.listen(PORT, async () =>{
+                await initRoles(); 
+                console.log(`Servidor corriendo en el puerto http://localhost:${PORT}`);
+            });
+        };
+    } catch (error) {
+        console.error('Error al iniciar el servidor:', error);
+        process.exit(1);
+    };
 };
+startServer();

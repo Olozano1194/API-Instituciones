@@ -5,11 +5,6 @@ dotenv.config();
 // let cachedDb = null;
 
 const connectDB = async () => {
-    // if (cachedDb) {
-    //     console.log('Ya  tenemos una conexión a la base de datos');        
-    //     return       
-    // }
-
     try {
         const connection = await mongoose.connect(process.env.MONGO_URI, {
             useNewUrlParser: true,
@@ -22,8 +17,8 @@ const connectDB = async () => {
         return connection;
     } catch (error) {
         console.error('Error al conectar a la base de datos', error);
-        throw error;
-        //process.exit(1); 
+        //throw error;
+        process.exit(1); 
     }
 };
 

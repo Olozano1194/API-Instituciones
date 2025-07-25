@@ -1,6 +1,8 @@
 const Usuario = require('../models/usuarioModel');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const Rol = require('../models/RolModel');
+const mongoose = require('mongoose');
 
 // Obtener todas los Usuarios
 const getUsuarios = async (req, res) => {
@@ -16,13 +18,37 @@ const getUsuarios = async (req, res) => {
 const createUsuario = async (req, res) => {
     //const nuevoUsuario = new Usuario(req.body);
     try {
-        //console.log('Datos recibidos:', req.body);
+        console.log('Datos recibidos:', req.body);
         
         //validación
         const { nombre, apellido, email, password, rol } = req.body;
+        console.log('Id del rol recibido:', rol);
+
         if (!email || !password) {
             return res.status(400).json({ message: "Email y contraseña son requeridos" });
         }
+
+        // Validación de rol (acepta ObjectId o string convertible)
+        if (!rol) {
+            return res.status(400).json({ 
+                message: "El rol es requerido" 
+            });
+        }
+        let rolId;
+        try {
+            rolId = new mongoose.Types.ObjectId(rol);
+        } catch (error) {
+            return res.status(400).json({
+                message: "Formato de ID del rol no válido"
+            });            
+        }        
+        // Validar que el rol existe
+        const rolExistente = await Rol.findById(rolId);
+        if (!rolExistente) {
+            return res.status(400).json({ 
+                message: 'El rol especificado no existe' 
+            });
+        }      
         //Verificamos si el usuario ya existe
         const usuarioExiste = await Usuario.findOne({ email });
         if (usuarioExiste) {
@@ -38,17 +64,11 @@ const createUsuario = async (req, res) => {
             apellido,
             email,
             password: hashedPass,
-            rol: rol || 'estudiante',
+            rol: rolId,
             idinstitucion: req.body.idinstitucion || null
         });
 
-        // console.log('Intentando guardar usuario:', {
-        //     nombre,
-        //     apellido,
-        //     email,
-        //     rol: nuevoUsuario.rol,
-        //     idinstitucion: nuevoUsuario.idinstitucion
-        // });
+        console.log('Intentando guardar usuario:', nuevoUsuario);
         
         const usuarioGuardado = await nuevoUsuario.save();
 
@@ -83,7 +103,7 @@ const createUsuario = async (req, res) => {
 const getUsuarioById = async (req, res) => {
     try {
         const userId = req.user.id;
-        const usuario = await Usuario.findById(userId);
+        const usuario = await Usuario.findById(userId);        
         if (!usuario) {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }

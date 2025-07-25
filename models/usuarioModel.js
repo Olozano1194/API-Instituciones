@@ -1,12 +1,16 @@
 const mongoose = require('mongoose');
-//const bcrypt = require('bcrypt');
+const Rol = require('./RolModel');
 
 const UsuarioModel = new mongoose.Schema({
     nombre: String,
     apellido: String,
     email: { type: String, required: true, unique: true },
-    rol: { type: String, default: 'estudiante' },
     password: { type: String, require: true },
+    rol: { 
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Rol',
+        required: true
+    },    
     idinstitucion: { type: Number, default: null }
 }, {
     timestamps: true
