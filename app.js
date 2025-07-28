@@ -5,6 +5,8 @@ const cors = require('cors');
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsdoc = require("swagger-jsdoc");
 const initRoles = require('./config/initRoles');
+const getDepartamentos = require('./config/initDepartamento');
+const getMunicipio = require('./config/initMunicipio');
 
 dotenv.config();
 const app = express();
@@ -25,16 +27,16 @@ app.options('*', (req, res) => {
     res.sendStatus(200);
 });
 
-app.use((req, res, next) => {
-    console.log('\n--- Nueva Petición ---');
-    console.log('Método:', req.method);
-    console.log('URL:', req.url);
-    console.log('Headers:', req.headers);
-    if (req.method !== 'OPTIONS') {
-        console.log('Body:', req.body);
-    }
-    next();
-});
+// app.use((req, res, next) => {
+//     console.log('\n--- Nueva Petición ---');
+//     console.log('Método:', req.method);
+//     console.log('URL:', req.url);
+//     console.log('Headers:', req.headers);
+//     if (req.method !== 'OPTIONS') {
+//         console.log('Body:', req.body);
+//     }
+//     next();
+// });
 
 //Middleware para todas las rutas
 app.use((req, res, next) => {
@@ -122,6 +124,8 @@ const startServer = async () => {
         // Esperamos un momento para asegurar que la base de datos esté lista
         setTimeout(async () => {
             await initRoles();
+            await getDepartamentos();
+            await getMunicipio();
         }, 2000)
 
         // Definir puerto
@@ -132,7 +136,9 @@ const startServer = async () => {
             //iniciar el servidor localmente
             const PORT = process.env.PORT || 5000;
             app.listen(PORT, async () =>{
-                await initRoles(); 
+                await initRoles();
+                await getDepartamentos();
+                await getMunicipio(); 
                 console.log(`Servidor corriendo en el puerto http://localhost:${PORT}`);
             });
         };
