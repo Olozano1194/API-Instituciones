@@ -130,13 +130,13 @@ const getUsuarioById = async (req, res) => {
 
 // Actualizar un Usuario
 const updateUsuario = async (req, res) => {
-    console.log('Inicio de actualización');
+    // console.log('Inicio de actualización');
     const { id } = req.params;
     const updates = req.body;
     const file = req.file;
-    console.log('Id:', id);        
-    console.log('Datos recibidos:', updates);
-    console.log('Archivo recibido:', file);
+    // console.log('Id:', id);        
+    // console.log('Datos recibidos:', updates);
+    // console.log('Archivo recibido:', file);
         
     try {
         const usuario = await Usuario.findById(id);
@@ -153,7 +153,7 @@ const updateUsuario = async (req, res) => {
             const oldPath = path.join(__dirname, '..', 'uploads', oldPublicId);
             try {
             await fsp.unlink(oldPath);
-            console.log('Archivo anterior eliminado:', oldPath);
+            // console.log('Archivo anterior eliminado:', oldPath);
             } catch (err) {
             if (err.code !== 'ENOENT') {
                 console.error('Error eliminando anterior:', err);
@@ -167,7 +167,7 @@ const updateUsuario = async (req, res) => {
             url: `/uploads/${file.filename}`,
             publicId: file.filename
         };
-        console.log('Imagen guardada localmente:', updates.fotoPerfil);
+        // console.log('Imagen guardada localmente:', updates.fotoPerfil);
         }
 
         const usuarioActualizado = await Usuario.findByIdAndUpdate(
