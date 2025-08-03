@@ -3,11 +3,17 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const Rol = require('../models/RolModel');
 const mongoose = require('mongoose');
+// const cloudinary = require('../config/cloudinary');
+const fs = require('fs');
+const fsp = fs.promises;
+const path = require('path');
+
 
 // Obtener todas los Usuarios
 const getUsuarios = async (req, res) => {
     try {
-        const usuarios = await Usuario.find();
+        const usuarios = await Usuario.find().sort({ createdAt: -1 });        
+        
         res.status(200).json(usuarios);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -112,8 +118,9 @@ const getUsuarioById = async (req, res) => {
                 id: usuario._id,
                 nombre: usuario.nombre,
                 apellido: usuario.apellido,
-                email: usuario.email,
+                email: usuario.email,                
                 rol: usuario.rol,
+                fotoPerfil: usuario.fotoPerfil,
             }
         });
     } catch (error) {
@@ -123,15 +130,66 @@ const getUsuarioById = async (req, res) => {
 
 // Actualizar un Usuario
 const updateUsuario = async (req, res) => {
+    console.log('Inicio de actualización');
+    const { id } = req.params;
+    const updates = req.body;
+    const file = req.file;
+    console.log('Id:', id);        
+    console.log('Datos recibidos:', updates);
+    console.log('Archivo recibido:', file);
+        
     try {
-        const usuarioActualizado = await Usuario.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        if (!usuarioActualizado) {
-            return res.status(404).json({ message: 'Usuario no encontrado' });
+        const usuario = await Usuario.findById(id);
+        if (!usuario) {
+        if (file) {
+            try { await fsp.unlink(file.path); } catch(_) {}
         }
-        res.status(200).json(usuarioActualizado);
+        return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        if (file) {
+        const oldPublicId = usuario.fotoPerfil?.publicId;
+        if (oldPublicId) {
+            const oldPath = path.join(__dirname, '..', 'uploads', oldPublicId);
+            try {
+            await fsp.unlink(oldPath);
+            console.log('Archivo anterior eliminado:', oldPath);
+            } catch (err) {
+            if (err.code !== 'ENOENT') {
+                console.error('Error eliminando anterior:', err);
+            } else {
+                console.log('No existía archivo anterior:', oldPath);
+            }
+            }
+        }
+
+        updates.fotoPerfil = {
+            url: `/uploads/${file.filename}`,
+            publicId: file.filename
+        };
+        console.log('Imagen guardada localmente:', updates.fotoPerfil);
+        }
+
+        const usuarioActualizado = await Usuario.findByIdAndUpdate(
+        id,
+        { $set: updates },
+        { new: true, runValidators: true }
+        );
+
+        return res.json({
+        message: 'Usuario actualizado correctamente',
+        usuario: usuarioActualizado
+        });
     } catch (error) {
-        res.status(400).json({ message: error.message });
-    }
+        console.error('❌ Error general updateUsuario:', error);
+        if (file) {
+        try { await fsp.unlink(file.path); } catch(_) {}
+        }
+        return res.status(400).json({
+        message: 'Error al actualizar usuario',
+        error: error.message
+        });
+    }        
 };
 
 // Eliminar un Usuario
@@ -195,5 +253,5 @@ module.exports = {
     getUsuarioById,
     updateUsuario,
     deleteUsuario,
-    loginUsuario,    
+    loginUsuario    
 };

@@ -1,5 +1,5 @@
 const express = require('express');
-const protegerRutas = require('../routes/proteccionRutas/authMiddleware.js');
+const protegerRutas = require('../middleware/proteccionRutas/authMiddleware.js');
 const router = express.Router();
 const {
     getUsuarios,
@@ -7,8 +7,9 @@ const {
     getUsuarioById,
     updateUsuario,
     deleteUsuario,
-    loginUsuario
+    loginUsuario    
 } = require('../controllers/usuariosController.js');
+const upload = require('../middleware/upload.js');
 
 /**
  * @swagger
@@ -115,7 +116,7 @@ router.get('/me', protegerRutas, getUsuarioById);
  *       404:
  *         description: Usuario no encontrado
  */
-router.put('/:id', protegerRutas, updateUsuario);
+router.put('/:id', protegerRutas, upload.single('fotoPerfil'), updateUsuario);
 
 /**
  * @swagger
@@ -136,6 +137,7 @@ router.put('/:id', protegerRutas, updateUsuario);
  *       404:
  *         description: Usuario no encontrado
  */
-router.delete('/usuarios/:id', protegerRutas, deleteUsuario);
+router.delete('/:id', protegerRutas, deleteUsuario);
+
 
 module.exports = router;

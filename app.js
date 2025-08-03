@@ -1,12 +1,13 @@
 const express = require('express');
 const dotenv = require('dotenv');
+const path = require('path');
 const connectDB = require('./config/db');
 const cors = require('cors');
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsdoc = require("swagger-jsdoc");
-const initRoles = require('./config/initRoles');
-const getDepartamentos = require('./config/initDepartamento');
-const getMunicipio = require('./config/initMunicipio');
+const initRoles = require('./middleware/initRoles');
+const getDepartamentos = require('./middleware/initDepartamento');
+const getMunicipio = require('./middleware/initMunicipio');
 
 dotenv.config();
 const app = express();
@@ -16,6 +17,7 @@ const app = express();
 
 // Middleware para analizar JSON
 app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.urlencoded({ extended: true }));
 
 //Habilitar Cors
@@ -45,20 +47,6 @@ app.use((req, res, next) => {
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With, Accept');
     next();
 });
-
-//Middleware de logging
-// app.use((req, res, next) => {
-//     console.log(`${req.method} ${req.url}`);
-//     console.log('Headers:', req.headers);
-//     console.log('Body:', req.body);
-//     next();
-// });
-
-// app.use('/api/instituciones', (req, res, next) => {
-//     // Log de la solicitud para depuración
-//     console.log(`${req.method} ${req.url}`);
-//     next();
-// });
 
 // Definir rutas
 //Ruta para las instituciones

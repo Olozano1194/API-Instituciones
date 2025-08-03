@@ -7,7 +7,7 @@ const {
     updateRol,
     deleteRol
 } = require('../controllers/rolController');
-const protegerRutas = require('../routes/proteccionRutas/authMiddleware.js');
+const protegerRutas = require('../middleware/proteccionRutas/authMiddleware.js');
 
 
 // Rutas publicas

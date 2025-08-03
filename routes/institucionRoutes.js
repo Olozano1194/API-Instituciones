@@ -1,5 +1,5 @@
 const express = require('express');
-const protegerRutas = require('../routes/proteccionRutas/authMiddleware.js');
+const protegerRutas = require('../middleware/proteccionRutas/authMiddleware');
 const router = express.Router();
 const {
     getInstituciones,
