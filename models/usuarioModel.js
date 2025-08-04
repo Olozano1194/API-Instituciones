@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const Rol = require('./RolModel');
+const Rol = require('./rolModel');
 
 const UsuarioModel = new mongoose.Schema({
     nombre: String,

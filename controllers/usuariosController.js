@@ -1,7 +1,7 @@
 const Usuario = require('../models/usuarioModel');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const Rol = require('../models/RolModel');
+const Rol = require('../models/rolModel');
 const mongoose = require('mongoose');
 // const cloudinary = require('../config/cloudinary');
 const fs = require('fs');

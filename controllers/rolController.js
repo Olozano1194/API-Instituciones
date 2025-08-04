@@ -1,4 +1,4 @@
-const Rol = require('../models/RolModel');
+const Rol = require('../models/rolModel');
 
 //Obtener todos los roles
 const getRoles = async (req, res) => {

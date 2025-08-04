@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const Rol = require('../models/RolModel');
+const Rol = require('../models/rolModel');
 
 const initRoles = async () => {
     // Esperamos a que la conexión este lista

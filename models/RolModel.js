@@ -22,23 +22,8 @@ const RolModel = new mongoose.Schema({
     }
 }, {
     timestamps: true    
-    // createdAt: {
-    //     type: Date,
-    //     default: Date.now
-    // },
-    // updatedAt: {
-    //     type: Date,
-    //     default: Date.now
-    // }
-    
 });
 
-// MIddleware para actualizar la fecha de modificación
-// RolModel.pre('save', function(next) {
-//     this.updatedAt = Date.now();
-//     next();
-// });
+const Rol = mongoose.model('Rol', RolModel, 'roles');
 
-const Role = mongoose.model('Rol', RolModel, 'roles');
-
-module.exports = Role;
+module.exports = Rol;
