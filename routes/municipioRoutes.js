@@ -28,6 +28,6 @@ const { getMunicipios } = require('../controllers/municipioController');
  *                     type: string
  *                     description: Identificador del departamento al que pertenece el municipio
  */
-router.get('/municipios', getMunicipios);
+router.get('/', getMunicipios);
 
 module.exports = router;

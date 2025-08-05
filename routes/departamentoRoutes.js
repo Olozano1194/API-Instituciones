@@ -25,6 +25,6 @@ const { getDepartamentos } = require('../controllers/departamentoController');
  *                     type: string
  *                     description: Nombre del departamento
  */
-router.get('/departamentos', getDepartamentos);
+router.get('/', getDepartamentos);
 
 module.exports = router;
