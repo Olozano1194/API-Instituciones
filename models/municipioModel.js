@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const Departamentos = require('./departamentoModel') 
+// const Departamentos = require('./departamentoModel') 
 
 const MunicipioModel = new mongoose.Schema({
     id_municipio: {
@@ -12,8 +12,7 @@ const MunicipioModel = new mongoose.Schema({
         required: true
     },
     id_departamento: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Departamentos',
+        type: String,
         required: true
     }
 });

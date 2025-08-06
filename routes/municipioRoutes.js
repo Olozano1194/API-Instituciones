@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getMunicipios } = require('../controllers/municipioController');
+const { getMunicipios, getMunicipalityByDepartament } = require('../controllers/municipioController');
 
 /**
  * @swagger
@@ -29,5 +29,8 @@ const { getMunicipios } = require('../controllers/municipioController');
  *                     description: Identificador del departamento al que pertenece el municipio
  */
 router.get('/', getMunicipios);
+
+// 
+router.get('/by-departamento', getMunicipalityByDepartament);
 
 module.exports = router;
