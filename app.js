@@ -64,6 +64,10 @@ app.use('/api/usuario', usuarioRoutes);
 //Rutas para los roles
 const rolRoutes = require('./routes/rolRoutes');
 app.use('/api/roles', rolRoutes);
+// Rutas para los estudiantes
+const estudianteRoutes = require('./routes/estudianteRoutes');
+app.use('/api/estudiante', estudianteRoutes);
+
 
 // Middleware para manejar errores
 app.use((err, req, res, next) => {

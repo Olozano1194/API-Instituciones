@@ -1,4 +1,5 @@
 const Usuario = require('../models/usuarioModel');
+const Estudiante = require('../models/estudiantesModel');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const Rol = require('../models/rolModel');
@@ -24,11 +25,10 @@ const getUsuarios = async (req, res) => {
 const createUsuario = async (req, res) => {
     //const nuevoUsuario = new Usuario(req.body);
     try {
-        console.log('Datos recibidos:', req.body);
-        
+        // console.log('Datos recibidos:', req.body);        
         //validación
-        const { nombre, apellido, email, password, rol } = req.body;
-        console.log('Id del rol recibido:', rol);
+        const { email, password, rol } = req.body;
+        // console.log('Id del rol recibido:', rol);
 
         if (!email || !password) {
             return res.status(400).json({ message: "Email y contraseña son requeridos" });
@@ -66,20 +66,30 @@ const createUsuario = async (req, res) => {
 
         //Crea el nuevo usuario con la contraseña ya encriptada
         const nuevoUsuario = new Usuario({
-            nombre,
-            apellido,
+            // nombre,
+            // apellido,
             email,
             password: hashedPass,
             rol: rolId,
             idinstitucion: req.body.idinstitucion || null
         });
 
-        console.log('Intentando guardar usuario:', nuevoUsuario);
+        // console.log('Intentando guardar usuario:', nuevoUsuario);
         
         const usuarioGuardado = await nuevoUsuario.save();
 
         //Generar token
         const token = jwt.sign({ id: usuarioGuardado._id }, process.env.SECRET_KEY, { expiresIn: '24h' });
+
+         // Crear el estudiante asociado automaticamente
+        await Estudiante.create({
+            id_usuario: usuarioGuardado._id,
+            nombre: '',
+            apellido: '',
+            fechanacimiento: null,
+            telefono: '',
+            direccion: ''
+        });
 
         //Enviamos la respuesta sin el password
         // const usuarioResponse = usuarioGuardado.toObject();
@@ -116,8 +126,8 @@ const getUsuarioById = async (req, res) => {
         res.status(200).json({
             user: {
                 id: usuario._id,
-                nombre: usuario.nombre,
-                apellido: usuario.apellido,
+                // nombre: usuario.nombre,
+                // apellido: usuario.apellido,
                 email: usuario.email,                
                 rol: usuario.rol,
                 fotoPerfil: usuario.fotoPerfil,

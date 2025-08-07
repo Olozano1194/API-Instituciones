@@ -1,9 +1,9 @@
 const mongoose = require('mongoose');
-const Rol = require('./rolModel');
+// const Rol = require('./rolModel');
 
 const UsuarioModel = new mongoose.Schema({
-    nombre: String,
-    apellido: String,
+    // nombre: String,
+    // apellido: String,
     email: { type: String, required: true, unique: true },
     password: { type: String, require: true },
     rol: { 

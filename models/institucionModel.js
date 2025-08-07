@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Estudiante = require('./estudiantesModel');
 
 const AsistenciaSchema = new mongoose.Schema({
     fecha: Date,
@@ -80,8 +81,8 @@ const InstitucionSchema = new mongoose.Schema({
     estado: String,
     idsecretaria: mongoose.Schema.Types.ObjectId,
     nosedes: Number,
-    estudiantes: [EstudianteSchema],
-    profesores: [ProfesorSchema],
+    estudiantes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Estudiante' }],
+    profesores: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Profesor' }],
     periodos: [PeriodoSchema],
 });
 
