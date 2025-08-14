@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 // const Usuario = require('./usuarioModel');
 
 const EstudianteSchema = new mongoose.Schema({
-    idestudiante: mongoose.Schema.Types.ObjectId,
+    // idestudiante: mongoose.Schema.Types.ObjectId,
     nombre: String,
     apellido: String,
     fechanacimiento: Date,

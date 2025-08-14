@@ -16,7 +16,8 @@ const getEstudiantes = async (req, res) => {
 const getEstudianteById = async (req, res) => {
     try {
         const userId = req.user.id;
-        const estudiante = await Estudiante.findOne({ id_usuario: userId });        
+        const estudiante = await Estudiante.findOne({ id_usuario: userId });            
+                
         if (!estudiante) {
             return res.status(404).json({ message: 'Estudiante no encontrado' });
         }

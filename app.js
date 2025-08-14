@@ -67,6 +67,9 @@ app.use('/api/roles', rolRoutes);
 // Rutas para los estudiantes
 const estudianteRoutes = require('./routes/estudianteRoutes');
 app.use('/api/estudiante', estudianteRoutes);
+// Rutas para los profesores
+const profesorRoutes = require('./routes/profesorRoutes');
+app.use('/api/profesor', profesorRoutes);
 
 
 // Middleware para manejar errores

@@ -6,7 +6,7 @@ const RolModel = new mongoose.Schema({
         required: [true, 'El nombre del rol es requerido'],
         unique: true,
         trim: true,
-        lowecase:true
+        lowercase:true
     },
     descripcion: {
         type: String,

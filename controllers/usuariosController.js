@@ -1,5 +1,6 @@
 const Usuario = require('../models/usuarioModel');
 const Estudiante = require('../models/estudiantesModel');
+const Profesor = require('../models/profesorModel');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const Rol = require('../models/rolModel');
@@ -81,15 +82,27 @@ const createUsuario = async (req, res) => {
         //Generar token
         const token = jwt.sign({ id: usuarioGuardado._id }, process.env.SECRET_KEY, { expiresIn: '24h' });
 
-         // Crear el estudiante asociado automaticamente
-        await Estudiante.create({
-            id_usuario: usuarioGuardado._id,
-            nombre: '',
-            apellido: '',
-            fechanacimiento: null,
-            telefono: '',
-            direccion: ''
-        });
+        const rolNombre = rolExistente.nombre.toLowerCase();
+        if (rolNombre === 'estudiante') {
+             // Crear el estudiante asociado automaticamente
+            await Estudiante.create({
+                id_usuario: usuarioGuardado._id,
+                nombre: '',
+                apellido: '',
+                fechanacimiento: null,
+                telefono: '',
+                direccion: ''
+            });
+        } else if (rolNombre === 'docente') {
+            await Profesor.create({
+                id_usuario: usuarioGuardado._id,
+                nombre: '',
+                apellido: '',
+                telefono: '',
+                especialidad: '' 
+            });
+        }
+        
 
         //Enviamos la respuesta sin el password
         // const usuarioResponse = usuarioGuardado.toObject();
@@ -97,7 +110,11 @@ const createUsuario = async (req, res) => {
 
         res.status(201).json({
             message: "Usuario creado exitosamente",
-            usuario: usuarioGuardado,
+            usuario: {
+                id: usuarioGuardado._id,
+                email: usuarioGuardado.email,
+                rol: usuarioGuardado.nombre,
+            },
             token
         });
     } catch (error) {
@@ -119,7 +136,8 @@ const createUsuario = async (req, res) => {
 const getUsuarioById = async (req, res) => {
     try {
         const userId = req.user.id;
-        const usuario = await Usuario.findById(userId);        
+        const usuario = await Usuario.findById(userId)
+         .populate('rol', 'nombre');        
         if (!usuario) {
             return res.status(404).json({ message: 'Usuario no encontrado' });
         }
