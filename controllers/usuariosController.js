@@ -240,7 +240,7 @@ const loginUsuario = async (req, res) => {
     
     try {
         //Verficamos si el usuario existe
-        const usuario = await Usuario.findOne({ email });
+        const usuario = await Usuario.findOne({ email }).populate('rol', 'nombre');
         if  (!usuario) {
             return res.status(404).json({ message: 'Credenciales inválidas' });
         }
@@ -252,19 +252,15 @@ const loginUsuario = async (req, res) => {
         }
         //Generamos un token de acceso
         const token = jwt.sign({ 
-            id: usuario._id }, 
+            id: usuario._id, rol: usuario.rol?.nombre },
             process.env.SECRET_KEY, { expiresIn: '24h' });
 
         res.status(200).json({ 
             message: 'Inicio de sesión exitoso', 
-            token
-            // user: {
-            //     id: usuario._id,
-            //     nombre: usuario.nombre,
-            //     apellido: usuario.apellido,
-            //     email: usuario.email,
-            //     rol: usuario.rol
-            // } 
+            token,
+            user: {
+                rol: usuario.rol?.nombre
+            } 
         });
 
     }catch (err) {
