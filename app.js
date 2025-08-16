@@ -70,6 +70,9 @@ app.use('/api/estudiante', estudianteRoutes);
 // Rutas para los profesores
 const profesorRoutes = require('./routes/profesorRoutes');
 app.use('/api/profesor', profesorRoutes);
+// Rutas para los administradores
+const adminRoutes = require('./routes/adminRoutes');
+app.use('/api/admin', adminRoutes);
 
 
 // Middleware para manejar errores

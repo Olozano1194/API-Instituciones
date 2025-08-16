@@ -16,22 +16,13 @@ const getProfesores = async (req, res) => {
 const getProfesorById = async (req, res) => {
     try {
         const userId = req.user.id;
-        console.log('Buscando profesor para el usuario:', userId);
-        
-        const profesor = await Profesor.findOne({ id_usuario: userId }); 
-        console.log('Resultado de la búsqueda:', profesor);
-                   
+        const profesor = await Profesor.findOne({ id_usuario: userId });       
                 
         if (!profesor) {
-            console.log('No se encontro registro de profesor para el usuario:');
-            
             return res.status(404).json({ message: 'Profesor no encontrado' });
-        }
-        
+        }        
         res.status(200).json({ teacher: profesor });
     } catch (error) {
-        console.log('Error en getProfesorById');
-        
         res.status(500).json({ message: error.message });
     }
 };

@@ -1,6 +1,7 @@
 const Usuario = require('../models/usuarioModel');
 const Estudiante = require('../models/estudiantesModel');
 const Profesor = require('../models/profesorModel');
+const Admin = require('../models/adminModel');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const Rol = require('../models/rolModel');
@@ -100,6 +101,14 @@ const createUsuario = async (req, res) => {
                 apellido: '',
                 telefono: '',
                 especialidad: '' 
+            });
+        } else if (rolNombre === 'admin') {
+            await Admin.create({
+                id_usuario: usuarioGuardado._id,
+                nombre: '',
+                apellido: '',
+                telefono: '',
+                cargo: ''
             });
         }
         
