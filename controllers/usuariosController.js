@@ -90,7 +90,7 @@ const createUsuario = async (req, res) => {
                 id_usuario: usuarioGuardado._id,
                 nombre: '',
                 apellido: '',
-                fechanacimiento: null,
+                fechanacimiento: req.body.fechanacimiento || new Date(),
                 telefono: '',
                 direccion: ''
             });

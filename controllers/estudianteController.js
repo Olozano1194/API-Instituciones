@@ -11,11 +11,16 @@ const getEstudiantes = async (req, res) => {
         // Formateamos los datos para enviarlos
         const estudiantesFormateados = estudiantes.map(estudiante => ({
             value: estudiante._id,
-            label: estudiante.nombre + ' ' + estudiante.apellido
-                ? `${estudiante.nombre} ${estudiante.apellido}`
-                : `Estudiante - ${estudiante.id_usuario?.email} || 'sin email'`,
+            nombre: estudiante.nombre,
+            apellido: estudiante.apellido,
+            fechanacimiento: estudiante.fechanacimiento,
+            direccion: estudiante.direccion,
+            telefono: estudiante.telefono,
+            // label: estudiante.nombre + ' ' + estudiante.apellido
+            //     ? `${estudiante.nombre} ${estudiante.apellido}`
+            //     : `Estudiante - ${estudiante.id_usuario?.email} || 'sin email'`,
             email: estudiante.id_usuario?.email,
-            completo: !!(estudiante.nombre && estudiante.apellido)
+            // completo: !!(estudiante.nombre && estudiante.apellido)
         }));
         
         res.status(200).json(estudiantesFormateados);

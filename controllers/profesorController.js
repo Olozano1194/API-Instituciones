@@ -10,11 +10,15 @@ const getProfesores = async (req, res) => {
         
         const profesoresFormateados = profesor.map(profesor => ({
             value: profesor._id,
-            label: profesor.nombre + ' ' + profesor.apellido
-                ? `${profesor.nombre} ${profesor.apellido}`
-                : `Profesor - ${profesor.id_usuario?.email} || 'sin email'`,
+            nombre: profesor.nombre,
+            apellido: profesor.apellido,
+            // label: profesor.nombre + ' ' + profesor.apellido
+            //     ? `${profesor.nombre} ${profesor.apellido}`
+            //     : `Profesor - ${profesor.id_usuario?.email} || 'sin email'`,
             email: profesor.id_usuario?.email,
-            completo: !!(profesor.nombre && profesor.apellido)
+            telefono: profesor.telefono,
+            especialidad: profesor.especialidad,
+            // completo: !!(profesor.nombre && profesor.apellido)
         }));
         res.status(200).json(profesoresFormateados);
     } catch (error) {
