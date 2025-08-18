@@ -4,9 +4,19 @@ const Profesor = require('../models/profesorModel');
 // Obtener todas los Usuarios
 const getProfesores = async (req, res) => {
     try {
-        const profesor = await Profesor.find().sort({ createdAt: -1 });        
+        const profesor = await Profesor.find()
+        .populate('id_usuario', 'email')
+        .sort({ createdAt: -1 });        
         
-        res.status(200).json(profesor);
+        const profesoresFormateados = profesor.map(profesor => ({
+            value: profesor._id,
+            label: profesor.nombre + ' ' + profesor.apellido
+                ? `${profesor.nombre} ${profesor.apellido}`
+                : `Profesor - ${profesor.id_usuario?.email} || 'sin email'`,
+            email: profesor.id_usuario?.email,
+            completo: !!(profesor.nombre && profesor.apellido)
+        }));
+        res.status(200).json(profesoresFormateados);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

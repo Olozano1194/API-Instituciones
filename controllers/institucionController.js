@@ -1,3 +1,4 @@
+const Estudiantes = require('../models/estudiantesModel');
 const Institucion = require('../models/institucionModel');
 
 // Obtener todas las instituciones
@@ -12,12 +13,42 @@ const getInstituciones = async (req, res) => {
 
 // Crear una nueva institución
 const createInstitucion = async (req, res) => {
-    const nuevaInstitucion = new Institucion(req.body);
     try {
+        const { estudiantes = [], profesores = [] } = req.body;
+
+        // Validar que los Ids de estudiantes y profesores existentes
+        if (estudiantes.length > 0) {
+            const estudiantesValidados = await Estudiantes.find({
+                _id: { $in: estudiantes }
+            });
+            if (estudiantesValidados.length !== estudiantes.length) {
+                return res.status(400).json({ message: 'Algunos estudiantes seleccionados no existen' });
+            }
+        }
+
+        if (profesores.length > 0) {
+            const profesoresValidados = await Profesor.find({
+                _id: { $in: profesores }
+            });
+            if (profesoresValidados.length !== profesores.length) {
+                return res.status(400).json({ message: 'Algunos profesores seleccionados no existen' });
+            }
+        }
+        
+        const nuevaInstitucion = new Institucion({
+            ...req.body,
+            estudiantes,
+            profesores
+        });
         const institucionGuardada = await nuevaInstitucion.save();
+
+        await institucionGuardada.populate([
+            { path: 'estudiantes', select: 'nombre apellido' },
+            { path: 'profesores', select: 'nombre apellido especialidad' }
+        ]);
         res.status(201).json(institucionGuardada);
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        res.status(400).json({ message: 'Error al crear la institución', error: error.message });
     }
 };
 

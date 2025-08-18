@@ -4,9 +4,21 @@ const Estudiante = require('../models/estudiantesModel');
 // Obtener todas los Usuarios
 const getEstudiantes = async (req, res) => {
     try {
-        const estudiantes = await Estudiante.find().sort({ createdAt: -1 });        
+        const estudiantes = await Estudiante.find()
+        .populate('id_usuario', 'email')
+        .sort({ createdAt: -1 });
         
-        res.status(200).json(estudiantes);
+        // Formateamos los datos para enviarlos
+        const estudiantesFormateados = estudiantes.map(estudiante => ({
+            value: estudiante._id,
+            label: estudiante.nombre + ' ' + estudiante.apellido
+                ? `${estudiante.nombre} ${estudiante.apellido}`
+                : `Estudiante - ${estudiante.id_usuario?.email} || 'sin email'`,
+            email: estudiante.id_usuario?.email,
+            completo: !!(estudiante.nombre && estudiante.apellido)
+        }));
+        
+        res.status(200).json(estudiantesFormateados);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
