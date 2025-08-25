@@ -10,7 +10,7 @@ const getEstudiantes = async (req, res) => {
         
         // Formateamos los datos para enviarlos
         const estudiantesFormateados = estudiantes.map(estudiante => ({
-            value: estudiante._id,
+            _id: estudiante._id,
             nombre: estudiante.nombre,
             apellido: estudiante.apellido,
             fechanacimiento: estudiante.fechanacimiento,

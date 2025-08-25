@@ -9,7 +9,7 @@ const getProfesores = async (req, res) => {
         .sort({ createdAt: -1 });        
         
         const profesoresFormateados = profesor.map(profesor => ({
-            value: profesor._id,
+            _id: profesor._id,
             nombre: profesor.nombre,
             apellido: profesor.apellido,
             // label: profesor.nombre + ' ' + profesor.apellido

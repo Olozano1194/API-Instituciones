@@ -1,5 +1,7 @@
 const Estudiantes = require('../models/estudiantesModel');
+const Profesor = require('../models/profesorModel');
 const Institucion = require('../models/institucionModel');
+const mongoose = require('mongoose');
 
 // Obtener todas las instituciones
 const getInstituciones = async (req, res) => {
@@ -15,7 +17,22 @@ const getInstituciones = async (req, res) => {
 const createInstitucion = async (req, res) => {
     try {
         const { estudiantes = [], profesores = [] } = req.body;
-
+       
+        // Validar que los Ids de departamento sea ObjectId valido
+        if (!mongoose.Types.ObjectId.isValid(req.body.iddepartamento)) {
+            return res.status(400).json({
+                message: 'ID de departamento inválido',
+                received: req.body.iddepartamento
+            });            
+        }
+        // Validar que los Ids de municipio sea ObjectId valido
+        if (!mongoose.Types.ObjectId.isValid(req.body.idmunicipio)) {
+            return res.status(400).json({ 
+                message: 'ID de municipio inválido',
+                received: req.body.idmunicipio
+            });
+        }
+       
         // Validar que los Ids de estudiantes y profesores existentes
         if (estudiantes.length > 0) {
             const estudiantesValidados = await Estudiantes.find({
@@ -40,14 +57,19 @@ const createInstitucion = async (req, res) => {
             estudiantes,
             profesores
         });
+        
         const institucionGuardada = await nuevaInstitucion.save();
-
+        
         await institucionGuardada.populate([
             { path: 'estudiantes', select: 'nombre apellido' },
             { path: 'profesores', select: 'nombre apellido especialidad' }
         ]);
         res.status(201).json(institucionGuardada);
     } catch (error) {
+        console.error('❌ Error al crear institución:', error);
+        console.error('❌ Error name:', error.name);
+        console.error('❌ Error message:', error.message);
+        console.error('❌ Stack trace:', error.stack);
         res.status(400).json({ message: 'Error al crear la institución', error: error.message });
     }
 };
