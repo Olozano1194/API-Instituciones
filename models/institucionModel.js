@@ -16,7 +16,7 @@ const InstitucionSchema = new mongoose.Schema({
     director: String,
     iddepartamento: { type: mongoose.Schema.Types.ObjectId, ref: 'Departamento' },
     idmunicipio: { type: mongoose.Schema.Types.ObjectId, ref: 'Municipio' }, 
-    estado: String,
+    // estado: String,
     idsecretaria: mongoose.Schema.Types.ObjectId,
     nosedes: Number,
     estudiantes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Estudiante' }],
