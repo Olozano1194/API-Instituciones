@@ -16,17 +16,7 @@ const { getMunicipios, getMunicipalityByDepartament } = require('../controllers/
  *             schema:
  *               type: array
  *               items:
- *                 type: object
- *                 properties:
- *                   id_municipio:
- *                     type: string
- *                     description: Identificador del municipio
- *                   descripcion:
- *                     type: string
- *                     description: Nombre del municipio
- *                   id_departamento:
- *                     type: string
- *                     description: Identificador del departamento al que pertenece el municipio
+ *                 $ref: '#/components/schemas/Municipios'
  */
 router.get('/', getMunicipios);
 

@@ -2,7 +2,7 @@
  * @swagger
  * components:
  *   schemas:
- *     Departamento:
+ *     Departamentos:
  *       type: object
  *       required:
  *         - id_departamento

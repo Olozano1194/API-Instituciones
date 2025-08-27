@@ -2,7 +2,7 @@
  * @swagger
  * components:
  *   schemas:
- *     Municipio:
+ *     Municipios:
  *       type: object
  *       required:
  *         - id_municipio

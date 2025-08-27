@@ -81,7 +81,7 @@ router.post('/', protegerRutas, createInstitucion);
  *       404:
  *         description: Institución no encontrada
  */
-router.get('/me', protegerRutas, getInstitucionById);
+router.get('/:id', protegerRutas, getInstitucionById);
 
 /**
  * @swagger

@@ -21,7 +21,9 @@ const InstitucionSchema = new mongoose.Schema({
     nosedes: Number,
     estudiantes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Estudiante' }],
     profesores: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Profesor' }],
-    periodos: [PeriodoSchema],
+    periodos: [PeriodoSchema] 
+}, {
+    timestamps: true
 });
 
 const Institucion = mongoose.model('Institucion', InstitucionSchema, 'instituciones');

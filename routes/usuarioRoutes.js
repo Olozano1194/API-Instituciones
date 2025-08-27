@@ -18,6 +18,7 @@ const upload = require('../middleware/upload.js');
  *   description: API para gestionar Usuarios de las instituciones educativas
  */
 router.post('/login', loginUsuario);
+
 /**
  * @swagger
  * /api/usuario:
@@ -26,13 +27,13 @@ router.post('/login', loginUsuario);
  *     tags: [Usuarios]
  *     responses:
  *       200:
- *         description: Lista de todos los usuarios
+ *         description: Lista de usuarios
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/usuariosSchema'
+ *                 $ref: '#/components/schemas/Usuarios'
  */
 router.get('/', protegerRutas,  getUsuarios);
 
@@ -47,14 +48,14 @@ router.get('/', protegerRutas,  getUsuarios);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/schemas/usuarioSchema'
+ *             $ref: '#/components/schemas/Usuarios'
  *     responses:
  *       201:
  *         description: Usuario creado exitosamente
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/usuarioSchema'
+ *               $ref: '#/components/schemas/Usuarios'
  *       400:
  *         description: Error en la creación del usuario
  */
@@ -79,11 +80,11 @@ router.post('/', createUsuario);
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/usuarioSchema'
+ *               $ref: '#/components/schemas/Usuarios'
  *       404:
  *         description: Usuario no encontrado
  */
-router.get('/me', protegerRutas, getUsuarioById);
+router.get('/:id', protegerRutas, getUsuarioById);
 
 /**
  * @swagger
@@ -103,14 +104,14 @@ router.get('/me', protegerRutas, getUsuarioById);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/usuarioSchema'
+ *             $ref: '#/components/schemas/Usuarios'
  *     responses:
  *       200:
  *         description: Usuario actualizado
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/usuarioSchema'
+ *               $ref: '#/components/schemas/Usuarios'
  *       400:
  *         description: Error en la actualización del usuario
  *       404:
@@ -123,7 +124,7 @@ router.put('/:id', protegerRutas, upload.single('fotoPerfil'), updateUsuario);
  * /api/usuario/{id}:
  *   delete:
  *     summary: Elimina un usuario por su ID
- *     tags: [es]
+ *     tags: [Usuarios]
  *     parameters:
  *       - in: path
  *         name: id
@@ -133,7 +134,7 @@ router.put('/:id', protegerRutas, upload.single('fotoPerfil'), updateUsuario);
  *         description: ID del usuario
  *     responses:
  *       200:
- *         description: Usuario eliminad exitosamente
+ *         description: Usuario eliminado exitosamente
  *       404:
  *         description: Usuario no encontrado
  */
