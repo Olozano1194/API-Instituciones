@@ -16,14 +16,7 @@ const { getDepartamentos } = require('../controllers/departamentoController');
  *             schema:
  *               type: array
  *               items:
- *                 type: object
- *                 properties:
- *                   id_departamento:
- *                     type: string
- *                     description: Identificador del departamento
- *                   descripcion:
- *                     type: string
- *                     description: Nombre del departamento
+ *                 $ref: '#/components/schemas/Departamentos'
  */
 router.get('/', getDepartamentos);
 

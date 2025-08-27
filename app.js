@@ -96,7 +96,7 @@ const swaggerOptions = {
             },
         ],
     },
-    apis: ["./routes/institucionRoutes.js", "./routes/departamentoRoutes.js", "./routes/municipioRoutes.js", "./routes/usuariosRoutes.js"],
+    apis: ["./routes/*.js", "./models/schemas/*.js"]
 };
 
 // Iniciar Swagger en el puerto 5000

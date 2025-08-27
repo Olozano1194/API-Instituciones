@@ -6,9 +6,15 @@ const mongoose = require('mongoose');
 // Obtener todas las instituciones
 const getInstituciones = async (req, res) => {
     try {
-        const instituciones = await Institucion.find();
+        const instituciones = await Institucion.find().sort({ createdAt: -1 })
+        .populate('iddepartamento', 'descripcion')
+        .populate('idmunicipio', 'descripcion')
+        .populate('estudiantes', 'nombre apellido')
+        .populate('profesores', 'nombre apellido especialidad');
+        
         res.status(200).json(instituciones);
     } catch (error) {
+        console.error('Error al obtener instituciones:', error);
         res.status(500).json({ message: error.message });
     }
 };
