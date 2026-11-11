@@ -71,7 +71,9 @@ const createInstitucion = async (req, res) => {
         
         await institucionGuardada.populate([
             { path: 'estudiantes', select: 'nombre apellido' },
-            { path: 'profesores', select: 'nombre apellido especialidad' }
+            { path: 'profesores', select: 'nombre apellido especialidad' },
+            { path: 'iddepartamento', select: 'descripcion' },
+            { path: 'idmunicipio', select: 'descripcion' }
         ]);
         created(res, institucionGuardada);
     } catch (error) {
@@ -86,7 +88,9 @@ const createInstitucion = async (req, res) => {
 // Obtener una institución por ID
 const getInstitucionById = async (req, res) => {
     try {
-        const institucion = await Institucion.findById(req.params.id);
+        const institucion = await Institucion.findById(req.params.id)
+        .populate('iddepartamento', 'descripcion')
+        .populate('idmunicipio', 'descripcion');
         if (!institucion) {
             return res.status(404).json({ message: 'Institución no encontrada' });
         }
@@ -112,7 +116,9 @@ const updateInstitucion = async (req, res) => {
     }
 
     try {
-        const institucionActualizada = await Institucion.findByIdAndUpdate(id, { $set: updates }, { new: true, runValidators: true });
+        const institucionActualizada = await Institucion.findByIdAndUpdate(id, { $set: updates }, { new: true, runValidators: true })
+            .populate('iddepartamento', 'descripcion')
+            .populate('idmunicipio', 'descripcion');
         if (!institucionActualizada) {
             return fail(res, 404, 'NOT_FOUND', 'Institución no encontrada');
         }

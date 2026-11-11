@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Municipio = require('../models/municipioModel');
 const { ok, paginated, fail } = require('../utils/response');
 const { parsePagination } = require('../utils/pagination');
@@ -6,7 +7,7 @@ const getMunicipios = async (req, res) => {
     try {
         const { page, limit, skip } = parsePagination(req.query);
         const [municipios, total] = await Promise.all([
-            Municipio.find().skip(skip).limit(limit),
+            Municipio.find().populate('id_departamento', 'descripcion').skip(skip).limit(limit),
             Municipio.countDocuments()
         ]);
         paginated(res, municipios, { page, limit, total, totalPages: Math.ceil(total / limit) || 1 });
@@ -21,11 +22,16 @@ const getMunicipalityByDepartament = async (req, res) => {
         if (!departamento) {
             return fail(res, 400, 'BAD_REQUEST', 'Falta el parámetro departamento');
         }
-        const municipios = await Municipio.find({ id_departamento: departamento }).populate('id_departamento');
-        if (!municipios || municipios.length === 0) {
-            return fail(res, 404, 'NOT_FOUND', 'No se encontraron municipios para el departamento');
+        if (!mongoose.Types.ObjectId.isValid(departamento)) {
+            return fail(res, 400, 'BAD_REQUEST', 'ID de departamento inválido');
         }
-        ok(res, municipios);
+        const { page, limit, skip } = parsePagination(req.query);
+        const filter = { id_departamento: departamento };
+        const [municipios, total] = await Promise.all([
+            Municipio.find(filter).populate('id_departamento', 'descripcion').skip(skip).limit(limit),
+            Municipio.countDocuments(filter)
+        ]);
+        paginated(res, municipios, { page, limit, total, totalPages: Math.ceil(total / limit) || 1 });
     } catch (error) {
         fail(res, 500, 'INTERNAL_ERROR', 'Error al obtener los municipios del departamento');
     }
