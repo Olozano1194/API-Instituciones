@@ -1,5 +1,6 @@
 const express = require('express');
 const protegerRutas = require('../middleware/proteccionRutas/authMiddleware');
+const requireRole = require('../middleware/proteccionRutas/requireRole');
 const router = express.Router();
 const {
     getInstituciones,
@@ -56,7 +57,7 @@ router.get('/', protegerRutas, getInstituciones);
  *       400:
  *         description: Error en la creación de la institución
  */
-router.post('/', protegerRutas, createInstitucion);
+router.post('/', protegerRutas, requireRole('admin'), createInstitucion);
 
 /**
  * @swagger
@@ -114,7 +115,7 @@ router.get('/:id', protegerRutas, getInstitucionById);
  *       404:
  *         description: Institución no encontrada
  */
-router.put('/:id', protegerRutas, updateInstitucion);
+router.put('/:id', protegerRutas, requireRole('admin'), updateInstitucion);
 
 /**
  * @swagger
@@ -135,6 +136,6 @@ router.put('/:id', protegerRutas, updateInstitucion);
  *       404:
  *         description: Institución no encontrada
  */
-router.delete('/:id', protegerRutas, deleteInstitucion);
+router.delete('/:id', protegerRutas, requireRole('admin'), deleteInstitucion);
 
 module.exports = router;

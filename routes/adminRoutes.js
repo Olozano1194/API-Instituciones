@@ -1,5 +1,6 @@
 const express = require('express');
 const protegerRutas = require('../middleware/proteccionRutas/authMiddleware.js');
+const requireRole = require('../middleware/proteccionRutas/requireRole.js');
 const router = express.Router();
 const {
     getAdministradores,
@@ -89,7 +90,7 @@ router.get('/me-admin', protegerRutas, getAdministradorById);
  *       404:
  *         description: Usuario no encontrado
  */
-router.put('/:id', protegerRutas, updateAdministrador);
+router.put('/:id', protegerRutas, requireRole('admin'), updateAdministrador);
 
 /**
  * @swagger
@@ -110,7 +111,7 @@ router.put('/:id', protegerRutas, updateAdministrador);
  *       404:
  *         description: Usuario no encontrado
  */
-router.delete('/:id', protegerRutas, deleteAdministrador);
+router.delete('/:id', protegerRutas, requireRole('admin'), deleteAdministrador);
 
 
 module.exports = router;

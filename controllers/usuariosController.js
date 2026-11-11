@@ -10,6 +10,8 @@ const fs = require('fs');
 const fsp = fs.promises;
 const path = require('path');
 const enriquecerUsuario = require('../utils/enriquecerUsuario');
+const { fail } = require('../utils/response');
+const usuarioSchema = require('../middleware/validation/schemas/usuarioSchema');
 
 // Obtener todos los Usuarios
 const getUsuarios = async (req, res) => {
@@ -144,8 +146,21 @@ const getUsuarioById = async (req, res) => {
 // Actualizar un Usuario
 const updateUsuario = async (req, res) => {
     const { id } = req.params;
-    const updates = req.body;
+    const updates = req.body || {};
     const file = req.file;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        if (file) { try { await fsp.unlink(file.path); } catch (_) { } }
+        return fail(res, 400, 'BAD_REQUEST', 'Identificador inválido');
+    }
+
+    const prohibited = (usuarioSchema.forbidden || []).filter((field) =>
+        Object.prototype.hasOwnProperty.call(updates, field)
+    );
+    if (prohibited.length > 0) {
+        if (file) { try { await fsp.unlink(file.path); } catch (_) { } }
+        return fail(res, 400, 'BAD_REQUEST', `Campos no permitidos: ${prohibited.join(', ')}`);
+    }
 
     try {
         const usuario = await Usuario.findById(id);

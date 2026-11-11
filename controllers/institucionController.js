@@ -2,6 +2,8 @@ const Estudiantes = require('../models/estudiantesModel');
 const Profesor = require('../models/profesorModel');
 const Institucion = require('../models/institucionModel');
 const mongoose = require('mongoose');
+const { fail } = require('../utils/response');
+const institucionSchema = require('../middleware/validation/schemas/institucionSchema');
 
 // Obtener todas las instituciones
 const getInstituciones = async (req, res) => {
@@ -95,14 +97,27 @@ const getInstitucionById = async (req, res) => {
 
 // Actualizar una institución
 const updateInstitucion = async (req, res) => {
+    const { id } = req.params;
+    const updates = req.body || {};
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return fail(res, 400, 'BAD_REQUEST', 'Identificador inválido');
+    }
+
+    const allowed = institucionSchema.allowed || [];
+    const unknown = Object.keys(updates).filter((key) => !allowed.includes(key));
+    if (unknown.length > 0) {
+        return fail(res, 400, 'BAD_REQUEST', `Campos no permitidos: ${unknown.join(', ')}`);
+    }
+
     try {
-        const institucionActualizada = await Institucion.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const institucionActualizada = await Institucion.findByIdAndUpdate(id, { $set: updates }, { new: true, runValidators: true });
         if (!institucionActualizada) {
-            return res.status(404).json({ message: 'Institución no encontrada' });
+            return fail(res, 404, 'NOT_FOUND', 'Institución no encontrada');
         }
-        res.status(200).json(institucionActualizada);
+        return res.status(200).json(institucionActualizada);
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        return fail(res, 400, 'BAD_REQUEST', error.message);
     }
 };
 

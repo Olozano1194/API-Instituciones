@@ -1,4 +1,6 @@
 const Estudiante = require('../models/estudiantesModel');
+const mongoose = require('mongoose');
+const { fail } = require('../utils/response');
 
 
 // Obtener todas los Usuarios
@@ -43,17 +45,26 @@ const getEstudianteById = async (req, res) => {
 
 // Actualizar un Estudiante
 const updateEstudiante = async (req, res) => {
-    // console.log('Inicio de actualización');
     const { id } = req.params;
-    const updates = req.body;
-    // console.log('Id:', id);        
-    // console.log('Datos recibidos:', updates);
-            
+    const updates = req.body || {};
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return fail(res, 400, 'BAD_REQUEST', 'Identificador inválido');
+    }
+
+    const forbidden = ['_id', 'id_usuario', 'createdAt', 'updatedAt'];
+    const prohibited = forbidden.filter((field) =>
+        Object.prototype.hasOwnProperty.call(updates, field)
+    );
+    if (prohibited.length > 0) {
+        return fail(res, 400, 'BAD_REQUEST', `Campos no permitidos: ${prohibited.join(', ')}`);
+    }
+
     try {
         const estudiante = await Estudiante.findById(id);
-        if (!estudiante) {        
-            return res.status(404).json({ message: 'Estudiante no encontrado' });
-        }        
+        if (!estudiante) {
+            return fail(res, 404, 'NOT_FOUND', 'Estudiante no encontrado');
+        }
 
         const estudianteActualizado = await Estudiante.findByIdAndUpdate(
             id,
@@ -66,12 +77,8 @@ const updateEstudiante = async (req, res) => {
             estudiante: estudianteActualizado
         });
     } catch (error) {
-        console.error('❌ Error general updateEstudiante:', error);        
-        return res.status(400).json({
-        message: 'Error al actualizar estudiante',
-        error: error.message
-        });
-    }        
+        return fail(res, 400, 'BAD_REQUEST', error.message);
+    }
 };
 
 // Eliminar un Usuario

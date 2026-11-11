@@ -1,4 +1,6 @@
 const Administrador = require('../models/adminModel');
+const mongoose = require('mongoose');
+const { fail } = require('../utils/response');
 
 
 // Obtener todas los Usuarios
@@ -29,17 +31,26 @@ const getAdministradorById = async (req, res) => {
 
 // Actualizar un Estudiante
 const updateAdministrador = async (req, res) => {
-    // console.log('Inicio de actualización');
     const { id } = req.params;
-    const updates = req.body;
-    // console.log('Id:', id);        
-    // console.log('Datos recibidos:', updates);
-            
+    const updates = req.body || {};
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return fail(res, 400, 'BAD_REQUEST', 'Identificador inválido');
+    }
+
+    const forbidden = ['_id', 'id_usuario', 'createdAt', 'updatedAt'];
+    const prohibited = forbidden.filter((field) =>
+        Object.prototype.hasOwnProperty.call(updates, field)
+    );
+    if (prohibited.length > 0) {
+        return fail(res, 400, 'BAD_REQUEST', `Campos no permitidos: ${prohibited.join(', ')}`);
+    }
+
     try {
         const administrador = await Administrador.findById(id);
-        if (!administrador) {        
-            return res.status(404).json({ message: 'Administrador no encontrado' });
-        }        
+        if (!administrador) {
+            return fail(res, 404, 'NOT_FOUND', 'Administrador no encontrado');
+        }
 
         const adminActualizado = await Administrador.findByIdAndUpdate(
             id,
@@ -52,12 +63,8 @@ const updateAdministrador = async (req, res) => {
             admin: adminActualizado
         });
     } catch (error) {
-        console.error('❌ Error general updateAdministrador:', error);        
-        return res.status(400).json({
-        message: 'Error al actualizar administrador',
-        error: error.message
-        });
-    }        
+        return fail(res, 400, 'BAD_REQUEST', error.message);
+    }
 };
 
 // Eliminar un Usuario
