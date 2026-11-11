@@ -1,49 +1,43 @@
 const Estudiante = require('../models/estudiantesModel');
 const mongoose = require('mongoose');
-const { fail } = require('../utils/response');
+const { ok, paginated, fail } = require('../utils/response');
+const { parsePagination } = require('../utils/pagination');
 
-
-// Obtener todas los Usuarios
 const getEstudiantes = async (req, res) => {
     try {
-        const estudiantes = await Estudiante.find()
-        .populate('id_usuario', 'email')
-        .sort({ createdAt: -1 });
-        
-        // Formateamos los datos para enviarlos
-        const estudiantesFormateados = estudiantes.map(estudiante => ({
+        const { page, limit, skip } = parsePagination(req.query);
+        const [estudiantes, total] = await Promise.all([
+            Estudiante.find().populate('id_usuario', 'email').sort({ createdAt: -1 }).skip(skip).limit(limit),
+            Estudiante.countDocuments()
+        ]);
+        const estudiantesFormateados = estudiantes.map((estudiante) => ({
             _id: estudiante._id,
             nombre: estudiante.nombre,
             apellido: estudiante.apellido,
             fechanacimiento: estudiante.fechanacimiento,
             direccion: estudiante.direccion,
             telefono: estudiante.telefono,
-            email: estudiante.id_usuario?.email,
+            email: estudiante.id_usuario?.email
         }));
-        
-        res.status(200).json(estudiantesFormateados);
+        paginated(res, estudiantesFormateados, { page, limit, total, totalPages: Math.ceil(total / limit) || 1 });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        fail(res, 500, 'INTERNAL_ERROR', error.message);
     }
 };
 
-// Obtener un Estudiante por ID
 const getEstudianteById = async (req, res) => {
     try {
         const userId = req.user.id;
-        const estudiante = await Estudiante.findOne({ id_usuario: userId });            
-                
+        const estudiante = await Estudiante.findOne({ id_usuario: userId });
         if (!estudiante) {
-            return res.status(404).json({ message: 'Estudiante no encontrado' });
+            return fail(res, 404, 'NOT_FOUND', 'Estudiante no encontrado');
         }
-        
-        res.status(200).json({ student: estudiante });
+        ok(res, { student: estudiante });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        fail(res, 500, 'INTERNAL_ERROR', error.message);
     }
 };
 
-// Actualizar un Estudiante
 const updateEstudiante = async (req, res) => {
     const { id } = req.params;
     const updates = req.body || {};
@@ -65,32 +59,26 @@ const updateEstudiante = async (req, res) => {
         if (!estudiante) {
             return fail(res, 404, 'NOT_FOUND', 'Estudiante no encontrado');
         }
-
         const estudianteActualizado = await Estudiante.findByIdAndUpdate(
             id,
             { $set: updates },
             { new: true, runValidators: true }
         );
-
-        return res.json({
-            message: 'Estudiante actualizado correctamente',
-            estudiante: estudianteActualizado
-        });
+        return ok(res, { message: 'Estudiante actualizado correctamente', estudiante: estudianteActualizado });
     } catch (error) {
         return fail(res, 400, 'BAD_REQUEST', error.message);
     }
 };
 
-// Eliminar un Usuario
 const deleteEstudiante = async (req, res) => {
     try {
         const estudianteEliminado = await Estudiante.findByIdAndDelete(req.params.id);
         if (!estudianteEliminado) {
-            return res.status(404).json({ message: 'Estudiante no encontrado' });
+            return fail(res, 404, 'NOT_FOUND', 'Estudiante no encontrado');
         }
-        res.status(200).json({ message: 'Estudiante eliminado' });
+        ok(res, { message: 'Estudiante eliminado' });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        fail(res, 500, 'INTERNAL_ERROR', error.message);
     }
 };
 

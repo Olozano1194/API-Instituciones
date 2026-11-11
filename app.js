@@ -50,19 +50,19 @@ const municipioRoutes = require('./routes/municipioRoutes');
 app.use('/api/municipios', municipioRoutes);
 //Rutas para los usuarios
 const usuarioRoutes = require('./routes/usuarioRoutes');
-app.use('/api/usuario', usuarioRoutes);
+app.use('/api/usuarios', usuarioRoutes);
 //Rutas para los roles
 const rolRoutes = require('./routes/rolRoutes');
 app.use('/api/roles', rolRoutes);
 // Rutas para los estudiantes
 const estudianteRoutes = require('./routes/estudianteRoutes');
-app.use('/api/estudiante', estudianteRoutes);
+app.use('/api/estudiantes', estudianteRoutes);
 // Rutas para los profesores
 const profesorRoutes = require('./routes/profesorRoutes');
-app.use('/api/profesor', profesorRoutes);
+app.use('/api/profesores', profesorRoutes);
 // Rutas para los administradores
 const adminRoutes = require('./routes/adminRoutes');
-app.use('/api/admin', adminRoutes);
+app.use('/api/administradores', adminRoutes);
 
 
 const errorHandler = require('./middleware/errorHandler');

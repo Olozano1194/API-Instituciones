@@ -2,7 +2,8 @@ const Estudiantes = require('../models/estudiantesModel');
 const Profesor = require('../models/profesorModel');
 const Institucion = require('../models/institucionModel');
 const mongoose = require('mongoose');
-const { fail } = require('../utils/response');
+const { ok, created, paginated, fail } = require('../utils/response');
+const { parsePagination } = require('../utils/pagination');
 const institucionSchema = require('../middleware/validation/schemas/institucionSchema');
 
 // Obtener todas las instituciones
@@ -72,7 +73,7 @@ const createInstitucion = async (req, res) => {
             { path: 'estudiantes', select: 'nombre apellido' },
             { path: 'profesores', select: 'nombre apellido especialidad' }
         ]);
-        res.status(201).json(institucionGuardada);
+        created(res, institucionGuardada);
     } catch (error) {
         console.error('❌ Error al crear institución:', error);
         console.error('❌ Error name:', error.name);
@@ -115,7 +116,7 @@ const updateInstitucion = async (req, res) => {
         if (!institucionActualizada) {
             return fail(res, 404, 'NOT_FOUND', 'Institución no encontrada');
         }
-        return res.status(200).json(institucionActualizada);
+        return ok(res, institucionActualizada);
     } catch (error) {
         return fail(res, 400, 'BAD_REQUEST', error.message);
     }

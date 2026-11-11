@@ -10,47 +10,49 @@ const fs = require('fs');
 const fsp = fs.promises;
 const path = require('path');
 const enriquecerUsuario = require('../utils/enriquecerUsuario');
-const { fail } = require('../utils/response');
+const { ok, created, paginated, fail, noContent } = require('../utils/response');
+const { parsePagination } = require('../utils/pagination');
 const usuarioSchema = require('../middleware/validation/schemas/usuarioSchema');
 
-// Obtener todos los Usuarios
 const getUsuarios = async (req, res) => {
     try {
-        const usuarios = await Usuario.find().select('email rol').populate('rol', 'nombre').sort({ createdAt: -1 });
+        const { page, limit, skip } = parsePagination(req.query);
+        const [usuarios, total] = await Promise.all([
+            Usuario.find().select('email rol').populate('rol', 'nombre').sort({ createdAt: -1 }).skip(skip).limit(limit),
+            Usuario.countDocuments()
+        ]);
         const usuariosFormateados = await Promise.all(usuarios.map(enriquecerUsuario));
-        res.status(200).json(usuariosFormateados);
+        paginated(res, usuariosFormateados, { page, limit, total, totalPages: Math.ceil(total / limit) || 1 });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        fail(res, 500, 'INTERNAL_ERROR', error.message);
     }
 };
 
-// Crear un nuevo Usuario
 const createUsuario = async (req, res) => {
     try {
         const { email, password, rol } = req.body;
 
         if (!email || !password) {
-            return res.status(400).json({ message: "Email y contraseña son requeridos" });
+            return fail(res, 400, 'BAD_REQUEST', 'Email y contraseña son requeridos');
         }
-
         if (!rol) {
-            return res.status(400).json({ message: "El rol es requerido" });
+            return fail(res, 400, 'BAD_REQUEST', 'El rol es requerido');
         }
         let rolId;
         try {
             rolId = new mongoose.Types.ObjectId(rol);
         } catch (error) {
-            return res.status(400).json({ message: "Formato de ID del rol no válido" });
+            return fail(res, 400, 'BAD_REQUEST', 'Formato de ID del rol no válido');
         }
 
         const rolExistente = await Rol.findById(rolId);
         if (!rolExistente) {
-            return res.status(400).json({ message: 'El rol especificado no existe' });
+            return fail(res, 400, 'BAD_REQUEST', 'El rol especificado no existe');
         }
 
         const usuarioExiste = await Usuario.findOne({ email });
         if (usuarioExiste) {
-            return res.status(400).json({ message: "El usuario ya existe", details: 'El email ya está registrado' });
+            return fail(res, 400, 'CONFLICT', 'El email ya está registrado');
         }
 
         const salt = await bcrypt.genSalt(10);
@@ -99,51 +101,53 @@ const createUsuario = async (req, res) => {
             });
         }
 
-        res.status(201).json({
-            message: "Usuario creado exitosamente",
+        created(res, {
+            message: 'Usuario creado exitosamente',
             usuario: {
                 id: usuarioGuardado._id,
                 email: usuarioGuardado.email,
-                rol: usuarioGuardado.nombre,
+                rol: rolExistente.nombre
             },
             token
         });
     } catch (error) {
         if (error.code === 11000) {
-            return res.status(400).json({
-                message: "El email ya está registrado",
-                details: error.message
-            });
+            return fail(res, 400, 'CONFLICT', 'El email ya está registrado');
         }
-        res.status(500).json({
-            message: "Error al crear el usuario",
-            details: error.message
-        });
+        fail(res, 500, 'INTERNAL_ERROR', 'Error al crear el usuario');
     }
 };
 
-// Obtener un Usuario por ID
 const getUsuarioById = async (req, res) => {
     try {
         const userId = req.user.id;
         const usuario = await Usuario.findById(userId).populate('rol', 'nombre');
         if (!usuario) {
-            return res.status(404).json({ message: 'Usuario no encontrado' });
+            return fail(res, 404, 'NOT_FOUND', 'Usuario no encontrado');
         }
-        res.status(200).json({
+        const rolNombre = (usuario.rol?.nombre || '').toLowerCase();
+        let profile = null;
+        if (rolNombre.includes('estud')) {
+            profile = await Estudiante.findOne({ id_usuario: userId });
+        } else if (rolNombre.includes('docente') || rolNombre.includes('profesor')) {
+            profile = await Profesor.findOne({ id_usuario: userId });
+        } else if (rolNombre.includes('admin')) {
+            profile = await Admin.findOne({ id_usuario: userId });
+        }
+        ok(res, {
             user: {
                 id: usuario._id,
                 email: usuario.email,
                 rol: usuario.rol,
-                fotoPerfil: usuario.fotoPerfil,
-            }
+                fotoPerfil: usuario.fotoPerfil
+            },
+            profile
         });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        fail(res, 500, 'INTERNAL_ERROR', error.message);
     }
 };
 
-// Actualizar un Usuario
 const updateUsuario = async (req, res) => {
     const { id } = req.params;
     const updates = req.body || {};
@@ -165,27 +169,19 @@ const updateUsuario = async (req, res) => {
     try {
         const usuario = await Usuario.findById(id);
         if (!usuario) {
-            if (file) {
-                try { await fsp.unlink(file.path); } catch (_) { }
-            }
-            return res.status(404).json({ message: 'Usuario no encontrado' });
+            if (file) { try { await fsp.unlink(file.path); } catch (_) { } }
+            return fail(res, 404, 'NOT_FOUND', 'Usuario no encontrado');
         }
 
         if (file) {
             const oldPublicId = usuario.fotoPerfil?.publicId;
             if (oldPublicId) {
                 const oldPath = path.join(__dirname, '..', 'uploads', oldPublicId);
-                try {
-                    await fsp.unlink(oldPath);
-                } catch (err) {
-                    if (err.code !== 'ENOENT') {
-                        console.error('Error eliminando anterior:', err);
-                    } else {
-                        console.log('No existía archivo anterior:', oldPath);
-                    }
+                try { await fsp.unlink(oldPath); }
+                catch (err) {
+                    if (err.code !== 'ENOENT') console.error('Error eliminando anterior:', err);
                 }
             }
-
             updates.fotoPerfil = {
                 url: `/uploads/${file.filename}`,
                 publicId: file.filename
@@ -198,66 +194,50 @@ const updateUsuario = async (req, res) => {
             { new: true, runValidators: true }
         );
 
-        return res.json({
-            message: 'Usuario actualizado correctamente',
-            usuario: usuarioActualizado
-        });
+        return ok(res, { message: 'Usuario actualizado correctamente', usuario: usuarioActualizado });
     } catch (error) {
         console.error('Error general updateUsuario:', error);
-        if (file) {
-            try { await fsp.unlink(file.path); } catch (_) { }
-        }
-        return res.status(400).json({
-            message: 'Error al actualizar usuario',
-            error: error.message
-        });
+        if (file) { try { await fsp.unlink(file.path); } catch (_) { } }
+        return fail(res, 400, 'BAD_REQUEST', error.message);
     }
 };
 
-// Eliminar un Usuario
 const deleteUsuario = async (req, res) => {
     try {
         const usuarioEliminado = await Usuario.findByIdAndDelete(req.params.id);
         if (!usuarioEliminado) {
-            return res.status(404).json({ message: 'Usuario no encontrado' });
+            return fail(res, 404, 'NOT_FOUND', 'Usuario no encontrado');
         }
-        res.status(200).json({ message: 'Usuario eliminado' });
+        ok(res, { message: 'Usuario eliminado' });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        fail(res, 500, 'INTERNAL_ERROR', error.message);
     }
 };
 
-// Iniciar sesión
 const loginUsuario = async (req, res) => {
     const { email, password } = req.body;
-
     try {
         const usuario = await Usuario.findOne({ email }).select('+password').populate('rol', 'nombre');
         if (!usuario) {
-            return res.status(404).json({ message: 'Credenciales inválidas' });
+            return fail(res, 404, 'UNAUTHORIZED', 'Credenciales inválidas');
         }
-
         const isValidPassword = await bcrypt.compare(password, usuario.password);
         if (!isValidPassword) {
-            return res.status(400).json({ message: 'Credenciales inválidas' });
+            return fail(res, 400, 'UNAUTHORIZED', 'Credenciales inválidas');
         }
-
         const token = jwt.sign(
             { id: usuario._id, rol: usuario.rol?.nombre },
             process.env.JWT_SECRET,
             { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
         );
-
-        res.status(200).json({
+        ok(res, {
             message: 'Inicio de sesión exitoso',
             token,
             user: { rol: usuario.rol?.nombre }
         });
     } catch (err) {
-        res.status(500).json({
-            message: 'Error en el servidor',
-            error: err.message
-        });
+        fail(res, 500, 'INTERNAL_ERROR', 'Error en el servidor');
     }
 };
+
 module.exports = { getUsuarios, createUsuario, getUsuarioById, updateUsuario, deleteUsuario, loginUsuario };

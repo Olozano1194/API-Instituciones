@@ -1,35 +1,34 @@
 const Administrador = require('../models/adminModel');
 const mongoose = require('mongoose');
-const { fail } = require('../utils/response');
+const { ok, paginated, fail } = require('../utils/response');
+const { parsePagination } = require('../utils/pagination');
 
-
-// Obtener todas los Usuarios
 const getAdministradores = async (req, res) => {
     try {
-        const admin = await Administrador.find().sort({ createdAt: -1 }); 
-        res.status(200).json(admin);
+        const { page, limit, skip } = parsePagination(req.query);
+        const [admins, total] = await Promise.all([
+            Administrador.find().sort({ createdAt: -1 }).skip(skip).limit(limit),
+            Administrador.countDocuments()
+        ]);
+        paginated(res, admins, { page, limit, total, totalPages: Math.ceil(total / limit) || 1 });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        fail(res, 500, 'INTERNAL_ERROR', error.message);
     }
 };
 
-// Obtener un Estudiante por ID
 const getAdministradorById = async (req, res) => {
     try {
-        const userId = req.user.id;                
-        const administrador = await Administrador.findOne({ id_usuario: userId });                            
-                
+        const userId = req.user.id;
+        const administrador = await Administrador.findOne({ id_usuario: userId });
         if (!administrador) {
-            return res.status(404).json({ message: 'Administrador no encontrado' });
+            return fail(res, 404, 'NOT_FOUND', 'Administrador no encontrado');
         }
-        
-        res.status(200).json({ admin: administrador });
+        ok(res, { admin: administrador });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        fail(res, 500, 'INTERNAL_ERROR', error.message);
     }
 };
 
-// Actualizar un Estudiante
 const updateAdministrador = async (req, res) => {
     const { id } = req.params;
     const updates = req.body || {};
@@ -51,32 +50,26 @@ const updateAdministrador = async (req, res) => {
         if (!administrador) {
             return fail(res, 404, 'NOT_FOUND', 'Administrador no encontrado');
         }
-
         const adminActualizado = await Administrador.findByIdAndUpdate(
             id,
             { $set: updates },
             { new: true, runValidators: true }
         );
-
-        return res.json({
-            message: 'Administrador actualizado correctamente',
-            admin: adminActualizado
-        });
+        return ok(res, { message: 'Administrador actualizado correctamente', admin: adminActualizado });
     } catch (error) {
         return fail(res, 400, 'BAD_REQUEST', error.message);
     }
 };
 
-// Eliminar un Usuario
 const deleteAdministrador = async (req, res) => {
     try {
         const adminEliminado = await Administrador.findByIdAndDelete(req.params.id);
         if (!adminEliminado) {
-            return res.status(404).json({ message: 'Administrador no encontrado' });
+            return fail(res, 404, 'NOT_FOUND', 'Administrador no encontrado');
         }
-        res.status(200).json({ message: 'Administrador eliminado' });
+        ok(res, { message: 'Administrador eliminado' });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        fail(res, 500, 'INTERNAL_ERROR', error.message);
     }
 };
 
