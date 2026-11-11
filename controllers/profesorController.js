@@ -12,13 +12,9 @@ const getProfesores = async (req, res) => {
             _id: profesor._id,
             nombre: profesor.nombre,
             apellido: profesor.apellido,
-            // label: profesor.nombre + ' ' + profesor.apellido
-            //     ? `${profesor.nombre} ${profesor.apellido}`
-            //     : `Profesor - ${profesor.id_usuario?.email} || 'sin email'`,
             email: profesor.id_usuario?.email,
             telefono: profesor.telefono,
-            especialidad: profesor.especialidad,
-            // completo: !!(profesor.nombre && profesor.apellido)
+            especialidad: profesor.especialidad,            
         }));
         res.status(200).json(profesoresFormateados);
     } catch (error) {

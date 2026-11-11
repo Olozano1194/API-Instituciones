@@ -4,8 +4,7 @@ const Administrador = require('../models/adminModel');
 // Obtener todas los Usuarios
 const getAdministradores = async (req, res) => {
     try {
-        const admin = await Administrador.find().sort({ createdAt: -1 });        
-        
+        const admin = await Administrador.find().sort({ createdAt: -1 }); 
         res.status(200).json(admin);
     } catch (error) {
         res.status(500).json({ message: error.message });
