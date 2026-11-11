@@ -63,7 +63,11 @@ const createUsuario = async (req, res) => {
 
         const usuarioGuardado = await nuevoUsuario.save();
 
-        const token = jwt.sign({ id: usuarioGuardado._id }, process.env.SECRET_KEY, { expiresIn: '24h' });
+        const token = jwt.sign(
+            { id: usuarioGuardado._id, rol: rolExistente.nombre },
+            process.env.JWT_SECRET,
+            { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+        );
 
         const rolNombre = rolExistente.nombre.toLowerCase();
         if (rolNombre === 'estudiante') {
@@ -213,7 +217,7 @@ const loginUsuario = async (req, res) => {
     const { email, password } = req.body;
 
     try {
-        const usuario = await Usuario.findOne({ email }).populate('rol', 'nombre');
+        const usuario = await Usuario.findOne({ email }).select('+password').populate('rol', 'nombre');
         if (!usuario) {
             return res.status(404).json({ message: 'Credenciales inválidas' });
         }
@@ -225,8 +229,8 @@ const loginUsuario = async (req, res) => {
 
         const token = jwt.sign(
             { id: usuario._id, rol: usuario.rol?.nombre },
-            process.env.SECRET_KEY,
-            { expiresIn: '24h' }
+            process.env.JWT_SECRET,
+            { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
         );
 
         res.status(200).json({
@@ -241,5 +245,4 @@ const loginUsuario = async (req, res) => {
         });
     }
 };
-
 module.exports = { getUsuarios, createUsuario, getUsuarioById, updateUsuario, deleteUsuario, loginUsuario };

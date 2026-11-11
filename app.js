@@ -20,33 +20,23 @@ app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.urlencoded({ extended: true }));
 
-//Habilitar Cors
-app.use(cors());
-app.options('*', (req, res) => {
-    res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
-    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With, Accept');
-    res.sendStatus(200);
-});
+// CORS configurado por entorno (FRONTEND_ORIGIN admite lista separada por comas)
+const allowedOrigins = (process.env.FRONTEND_ORIGIN || 'http://localhost:5173')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
-// app.use((req, res, next) => {
-//     console.log('\n--- Nueva Petición ---');
-//     console.log('Método:', req.method);
-//     console.log('URL:', req.url);
-//     console.log('Headers:', req.headers);
-//     if (req.method !== 'OPTIONS') {
-//         console.log('Body:', req.body);
-//     }
-//     next();
-// });
-
-//Middleware para todas las rutas
-app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
-    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With, Accept');
-    next();
-});
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Origen no permitido por CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Content-Length', 'X-Requested-With', 'Accept']
+}));
 
 // Definir rutas
 //Ruta para las instituciones
@@ -75,11 +65,10 @@ const adminRoutes = require('./routes/adminRoutes');
 app.use('/api/admin', adminRoutes);
 
 
-// Middleware para manejar errores
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).send({ message: 'Algo salió mal!', error: err.message });
-});
+const errorHandler = require('./middleware/errorHandler');
+
+// Middleware para manejar errores (debe ir al final)
+app.use(errorHandler);
 
 // Configuración de swagger-jsdoc
 const swaggerOptions = {
