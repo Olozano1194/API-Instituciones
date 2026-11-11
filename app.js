@@ -1,7 +1,7 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const path = require('path');
-const connectDB = require('./config/db');
+const { connectDB } = require('./config/db');
 const cors = require('cors');
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsdoc = require("swagger-jsdoc");
