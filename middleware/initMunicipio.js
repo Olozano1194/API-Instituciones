@@ -1,5 +1,6 @@
 const Municipio = require('../models/municipioModel');
 const Departamento = require('../models/departamentoModel');
+const logger = require('../config/logger');
 
 const getMunicipio = async () => {
     try {
@@ -38,12 +39,13 @@ const getMunicipio = async () => {
             await Municipio.bulkWrite(mappedMuns);
         }
     } catch (error) {
-        console.error('Error al cargar municipios:', error);
+        logger.error(error, 'Error al cargar municipios');
     }
 };
 
 const CargarDatos = async (req, res) => {
     await getMunicipio();
 };
+CargarDatos;
 
 module.exports = getMunicipio;

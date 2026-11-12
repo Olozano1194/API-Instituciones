@@ -4,6 +4,8 @@ const path = require('path');
 const helmet = require('helmet');
 const cors = require('cors');
 const { connectDB } = require('./config/db');
+const logger = require('./config/logger');
+const requestLogger = require('./middleware/requestLogger');
 const initRoles = require('./middleware/initRoles');
 const getDepartamentos = require('./middleware/initDepartamento');
 const getMunicipio = require('./middleware/initMunicipio');
@@ -11,6 +13,9 @@ const { apiLimiter } = require('./middleware/rateLimiter');
 
 dotenv.config();
 const app = express();
+
+// Middleware de registro de peticiones HTTP
+app.use(requestLogger);
 
 // Cabeceras de seguridad con Helmet (CSP deshabilitado para compatibilidad con Swagger UI)
 app.use(helmet({ contentSecurityPolicy: false }));
@@ -91,10 +96,10 @@ const startServer = async () => {
         // Iniciar el servidor localmente
         const PORT = process.env.PORT || 5000;
         app.listen(PORT, () => {
-            console.log(`Servidor corriendo en el puerto http://localhost:${PORT}`);
+            logger.info(`Servidor corriendo en el puerto http://localhost:${PORT}`);
         });
     } catch (error) {
-        console.error('Error al iniciar el servidor:', error);
+        logger.error(error, 'Error al iniciar el servidor');
         process.exit(1);
     }
 };

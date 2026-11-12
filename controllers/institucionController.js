@@ -2,6 +2,7 @@ const Estudiantes = require('../models/estudiantesModel');
 const Profesor = require('../models/profesorModel');
 const Institucion = require('../models/institucionModel');
 const mongoose = require('mongoose');
+const logger = require('../config/logger');
 const { ok, created, paginated, fail } = require('../utils/response');
 const { parsePagination } = require('../utils/pagination');
 const institucionSchema = require('../middleware/validation/schemas/institucionSchema');
@@ -17,7 +18,7 @@ const getInstituciones = async (req, res) => {
         
         res.status(200).json(instituciones);
     } catch (error) {
-        console.error('Error al obtener instituciones:', error);
+        logger.error(error, 'Error al obtener instituciones');
         res.status(500).json({ message: error.message });
     }
 };
@@ -77,10 +78,10 @@ const createInstitucion = async (req, res) => {
         ]);
         created(res, institucionGuardada);
     } catch (error) {
-        console.error('❌ Error al crear institución:', error);
-        console.error('❌ Error name:', error.name);
-        console.error('❌ Error message:', error.message);
-        console.error('❌ Stack trace:', error.stack);
+        logger.error(error, 'Error al crear institución');
+
+
+
         res.status(400).json({ message: 'Error al crear la institución', error: error.message });
     }
 };

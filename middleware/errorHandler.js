@@ -1,4 +1,5 @@
 const { fail } = require('../utils/response');
+const logger = require('../config/logger');
 
 // Traduce errores de Mongoose a un formato uniforme.
 const mapMongooseError = (err) => {
@@ -18,7 +19,7 @@ const mapMongooseError = (err) => {
 
 // Middleware global de manejo de errores. Sanitiza el mensaje en producción.
 const errorHandler = (err, req, res, next) => {
-  console.error(err);
+  logger.error(err);
 
   const mapped = mapMongooseError(err);
   const status = err.status || (mapped ? mapped.status : 500);

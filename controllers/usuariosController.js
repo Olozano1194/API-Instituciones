@@ -9,8 +9,10 @@ const mongoose = require('mongoose');
 const fs = require('fs');
 const fsp = fs.promises;
 const path = require('path');
+const logger = require('../config/logger');
 const enriquecerUsuario = require('../utils/enriquecerUsuario');
-const { ok, created, paginated, fail, noContent } = require('../utils/response');
+const { parsePagination } = require('../utils/pagination');
+const { ok, created, paginated, fail } = require('../utils/response');
 const ensureOwnershipOrAdmin = require('../utils/ensureOwnershipOrAdmin');
 const usuarioSchema = require('../middleware/validation/schemas/usuarioSchema');
 
@@ -31,13 +33,9 @@ const getUsuarios = async (req, res) => {
 const createUsuario = async (req, res) => {
     try {
         const { email, password, rol, nombre, apellido } = req.body;
+        if (!email || !password) return fail(res, 400, 'BAD_REQUEST', 'Email y contraseña son requeridos');
+        if (!rol) return fail(res, 400, 'BAD_REQUEST', 'El rol es requerido');
 
-        if (!email || !password) {
-            return fail(res, 400, 'BAD_REQUEST', 'Email y contraseña son requeridos');
-        }
-        if (!rol) {
-            return fail(res, 400, 'BAD_REQUEST', 'El rol es requerido');
-        }
         let rolId;
         try {
             rolId = new mongoose.Types.ObjectId(rol);
@@ -46,14 +44,10 @@ const createUsuario = async (req, res) => {
         }
 
         const rolExistente = await Rol.findById(rolId);
-        if (!rolExistente) {
-            return fail(res, 400, 'BAD_REQUEST', 'El rol especificado no existe');
-        }
+        if (!rolExistente) return fail(res, 400, 'BAD_REQUEST', 'El rol especificado no existe');
 
         const usuarioExiste = await Usuario.findOne({ email });
-        if (usuarioExiste) {
-            return fail(res, 400, 'CONFLICT', 'El email ya está registrado');
-        }
+        if (usuarioExiste) return fail(res, 400, 'CONFLICT', 'El email ya está registrado');
 
         // Institución proviene del admin autenticado, no del body.
         const adminUsuario = await Usuario.findById(req.user.id).select('idinstitucion');
@@ -62,13 +56,7 @@ const createUsuario = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPass = await bcrypt.hash(password, salt);
 
-        const nuevoUsuario = new Usuario({
-            email,
-            password: hashedPass,
-            rol: rolId,
-            idinstitucion
-        });
-
+        const nuevoUsuario = new Usuario({ email, password: hashedPass, rol: rolId, idinstitucion });
         const usuarioGuardado = await nuevoUsuario.save();
 
         const rolNombre = rolExistente.nombre.toLowerCase();
@@ -98,7 +86,6 @@ const createUsuario = async (req, res) => {
                 });
             }
         } catch (profileError) {
-            // Rollback del usuario si falla la creación del perfil
             await Usuario.findByIdAndDelete(usuarioGuardado._id);
             return fail(res, 500, 'INTERNAL_ERROR', 'Error al crear el perfil del usuario');
         }
@@ -112,9 +99,7 @@ const createUsuario = async (req, res) => {
             }
         });
     } catch (error) {
-        if (error.code === 11000) {
-            return fail(res, 400, 'CONFLICT', 'El email ya está registrado');
-        }
+        if (error.code === 11000) return fail(res, 400, 'CONFLICT', 'El email ya está registrado');
         fail(res, 500, 'INTERNAL_ERROR', 'Error al crear el usuario');
     }
 };
@@ -123,9 +108,8 @@ const getUsuarioById = async (req, res) => {
     try {
         const userId = req.user.id;
         const usuario = await Usuario.findById(userId).populate('rol', 'nombre');
-        if (!usuario) {
-            return fail(res, 404, 'NOT_FOUND', 'Usuario no encontrado');
-        }
+        if (!usuario) return fail(res, 404, 'NOT_FOUND', 'Usuario no encontrado');
+
         const rolNombre = (usuario.rol?.nombre || '').toLowerCase();
         let profile = null;
         if (rolNombre.includes('estud')) {
@@ -136,12 +120,7 @@ const getUsuarioById = async (req, res) => {
             profile = await Admin.findOne({ id_usuario: userId }).select('nombre apellido telefono cargo');
         }
         ok(res, {
-            user: {
-                id: usuario._id,
-                email: usuario.email,
-                rol: usuario.rol,
-                fotoPerfil: usuario.fotoPerfil
-            },
+            user: { id: usuario._id, email: usuario.email, rol: usuario.rol, fotoPerfil: usuario.fotoPerfil },
             profile
         });
     } catch (error) {
@@ -183,15 +162,13 @@ const updateUsuario = async (req, res) => {
             const oldPublicId = usuario.fotoPerfil?.publicId;
             if (oldPublicId) {
                 const oldPath = path.join(__dirname, '..', 'uploads', oldPublicId);
-                try { await fsp.unlink(oldPath); }
-                catch (err) {
-                    if (err.code !== 'ENOENT') console.error('Error eliminando anterior:', err);
+                try {
+                    await fsp.unlink(oldPath);
+                } catch (err) {
+                    if (err.code !== 'ENOENT') logger.error(err, 'Error eliminando foto anterior');
                 }
             }
-            updates.fotoPerfil = {
-                url: `/uploads/${file.filename}`,
-                publicId: file.filename
-            };
+            updates.fotoPerfil = { url: `/uploads/${file.filename}`, publicId: file.filename };
         }
 
         const usuarioActualizado = await Usuario.findByIdAndUpdate(
@@ -202,7 +179,7 @@ const updateUsuario = async (req, res) => {
 
         return ok(res, { message: 'Usuario actualizado correctamente', usuario: usuarioActualizado });
     } catch (error) {
-        console.error('Error general updateUsuario:', error);
+        logger.error(error, 'Error general updateUsuario');
         if (file) { try { await fsp.unlink(file.path); } catch (_) { } }
         return fail(res, 400, 'BAD_REQUEST', error.message);
     }
@@ -211,9 +188,7 @@ const updateUsuario = async (req, res) => {
 const deleteUsuario = async (req, res) => {
     try {
         const usuario = await Usuario.findById(req.params.id).select('_id');
-        if (!usuario) {
-            return fail(res, 404, 'NOT_FOUND', 'Usuario no encontrado');
-        }
+        if (!usuario) return fail(res, 404, 'NOT_FOUND', 'Usuario no encontrado');
         if (!ensureOwnershipOrAdmin(req, res, usuario._id)) return;
         await Usuario.findByIdAndDelete(req.params.id);
         ok(res, { message: 'Usuario eliminado' });
@@ -226,23 +201,15 @@ const loginUsuario = async (req, res) => {
     const { email, password } = req.body;
     try {
         const usuario = await Usuario.findOne({ email }).select('+password').populate('rol', 'nombre');
-        if (!usuario) {
-            return fail(res, 404, 'UNAUTHORIZED', 'Credenciales inválidas');
-        }
+        if (!usuario) return fail(res, 404, 'UNAUTHORIZED', 'Credenciales inválidas');
         const isValidPassword = await bcrypt.compare(password, usuario.password);
-        if (!isValidPassword) {
-            return fail(res, 400, 'UNAUTHORIZED', 'Credenciales inválidas');
-        }
+        if (!isValidPassword) return fail(res, 400, 'UNAUTHORIZED', 'Credenciales inválidas');
         const token = jwt.sign(
             { id: usuario._id, rol: usuario.rol?.nombre },
             process.env.JWT_SECRET,
             { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
         );
-        ok(res, {
-            message: 'Inicio de sesión exitoso',
-            token,
-            user: { rol: usuario.rol?.nombre }
-        });
+        ok(res, { message: 'Inicio de sesión exitoso', token, user: { rol: usuario.rol?.nombre } });
     } catch (err) {
         fail(res, 500, 'INTERNAL_ERROR', 'Error en el servidor');
     }
