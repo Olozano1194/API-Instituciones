@@ -1,14 +1,19 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const path = require('path');
-const { connectDB } = require('./config/db');
+const helmet = require('helmet');
 const cors = require('cors');
+const { connectDB } = require('./config/db');
 const initRoles = require('./middleware/initRoles');
 const getDepartamentos = require('./middleware/initDepartamento');
 const getMunicipio = require('./middleware/initMunicipio');
+const { apiLimiter } = require('./middleware/rateLimiter');
 
 dotenv.config();
 const app = express();
+
+// Cabeceras de seguridad con Helmet (CSP deshabilitado para compatibilidad con Swagger UI)
+app.use(helmet({ contentSecurityPolicy: false }));
 
 // Conectar a la base de datos
 // connectDB();
@@ -35,6 +40,9 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Content-Length', 'X-Requested-With', 'Accept']
 }));
+
+// Rate limiting general para endpoints de la API
+app.use('/api', apiLimiter);
 
 // Definir rutas
 //Ruta para las instituciones

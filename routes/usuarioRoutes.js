@@ -1,6 +1,7 @@
 const express = require('express');
 const protegerRutas = require('../middleware/proteccionRutas/authMiddleware.js');
 const requireRole = require('../middleware/proteccionRutas/requireRole.js');
+const { loginLimiter } = require('../middleware/rateLimiter.js');
 const router = express.Router();
 const {
     getUsuarios,
@@ -44,7 +45,7 @@ const upload = require('../middleware/upload.js');
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.post('/login', loginUsuario);
+router.post('/login', loginLimiter, loginUsuario);
 
 /**
  * @swagger
