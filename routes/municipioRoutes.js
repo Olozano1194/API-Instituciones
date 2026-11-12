@@ -14,6 +14,7 @@ const { getMunicipios, getMunicipalityByDepartament } = require('../controllers/
  * /api/municipios:
  *   get:
  *     summary: Obtiene lista paginada de todos los municipios
+ *     description: Obtiene lista paginada de todos los municipios
  *     tags: [Municipios]
  *     parameters:
  *       - in: query
@@ -43,6 +44,7 @@ router.get('/', getMunicipios);
  * /api/municipios/by-departamento:
  *   get:
  *     summary: Obtiene los municipios asociados a un departamento
+ *     description: Obtiene los municipios asociados a un departamento
  *     tags: [Municipios]
  *     parameters:
  *       - in: query

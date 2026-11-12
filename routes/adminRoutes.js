@@ -20,6 +20,7 @@ const {
  * /api/administradores:
  *   get:
  *     summary: Obtiene la lista paginada de administradores
+ *     description: Obtiene la lista paginada de administradores
  *     tags: [Administradores]
  *     security:
  *       - bearerAuth: []
@@ -53,6 +54,7 @@ router.get('/', protegerRutas, getAdministradores);
  * /api/administradores/{id}:
  *   put:
  *     summary: Actualiza el perfil de un administrador
+ *     description: Actualiza el perfil de un administrador
  *     tags: [Administradores]
  *     security:
  *       - bearerAuth: []
@@ -86,6 +88,7 @@ router.put('/:id', protegerRutas, requireRole('admin'), updateAdministrador);
  * /api/administradores/{id}:
  *   delete:
  *     summary: Elimina el perfil de un administrador (solo administradores)
+ *     description: Elimina el perfil de un administrador (solo administradores)
  *     tags: [Administradores]
  *     security:
  *       - bearerAuth: []

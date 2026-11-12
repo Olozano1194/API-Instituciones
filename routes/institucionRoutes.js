@@ -22,6 +22,7 @@ const {
  * /api/instituciones:
  *   get:
  *     summary: Obtiene la lista de instituciones educativas
+ *     description: Obtiene la lista de instituciones educativas
  *     tags: [Instituciones]
  *     security:
  *       - bearerAuth: []
@@ -31,9 +32,7 @@ const {
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Institucion'
+ *               $ref: '#/components/schemas/PaginatedInstituciones'
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
@@ -44,6 +43,7 @@ router.get('/', protegerRutas, getInstituciones);
  * /api/instituciones:
  *   post:
  *     summary: Crea una nueva institución educativa (solo administradores)
+ *     description: Crea una nueva institución educativa (solo administradores)
  *     tags: [Instituciones]
  *     security:
  *       - bearerAuth: []
@@ -74,6 +74,7 @@ router.post('/', protegerRutas, requireRole('admin'), createInstitucion);
  * /api/instituciones/{id}:
  *   get:
  *     summary: Obtiene una institución por su ID
+ *     description: Obtiene una institución por su ID
  *     tags: [Instituciones]
  *     security:
  *       - bearerAuth: []
@@ -90,7 +91,7 @@ router.post('/', protegerRutas, requireRole('admin'), createInstitucion);
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Institucion'
+ *               $ref: '#/components/schemas/InstitucionResponse'
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  *       404:
@@ -103,6 +104,7 @@ router.get('/:id', protegerRutas, getInstitucionById);
  * /api/instituciones/{id}:
  *   put:
  *     summary: Actualiza una institución por su ID (solo administradores)
+ *     description: Actualiza una institución por su ID (solo administradores)
  *     tags: [Instituciones]
  *     security:
  *       - bearerAuth: []
@@ -142,6 +144,7 @@ router.put('/:id', protegerRutas, requireRole('admin'), updateInstitucion);
  * /api/instituciones/{id}:
  *   delete:
  *     summary: Elimina una institución por su ID (solo administradores)
+ *     description: Elimina una institución por su ID (solo administradores)
  *     tags: [Instituciones]
  *     security:
  *       - bearerAuth: []

@@ -22,6 +22,7 @@ const requireRole = require('../middleware/proteccionRutas/requireRole.js');
  * /api/roles:
  *   get:
  *     summary: Obtiene la lista de roles activos
+ *     description: Obtiene la lista de roles activos
  *     tags: [Roles]
  *     responses:
  *       200:
@@ -40,6 +41,7 @@ router.get('/', getRoles);
  * /api/roles/{id}:
  *   get:
  *     summary: Obtiene un rol por su ID
+ *     description: Obtiene un rol por su ID
  *     tags: [Roles]
  *     parameters:
  *       - in: path
@@ -65,6 +67,7 @@ router.get('/:id', getRolById);
  * /api/roles:
  *   post:
  *     summary: Crea un nuevo rol (solo administradores)
+ *     description: Crea un nuevo rol (solo administradores)
  *     tags: [Roles]
  *     security:
  *       - bearerAuth: []
@@ -95,6 +98,7 @@ router.post('/', protegerRutas, requireRole('admin'), createRol);
  * /api/roles/{id}:
  *   put:
  *     summary: Actualiza un rol por su ID (solo administradores)
+ *     description: Actualiza un rol por su ID (solo administradores)
  *     tags: [Roles]
  *     security:
  *       - bearerAuth: []
@@ -134,6 +138,7 @@ router.put('/:id', protegerRutas, requireRole('admin'), updateRol);
  * /api/roles/{id}:
  *   delete:
  *     summary: Elimina un rol por su ID (solo administradores)
+ *     description: Elimina un rol por su ID (solo administradores)
  *     tags: [Roles]
  *     security:
  *       - bearerAuth: []
