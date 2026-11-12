@@ -40,13 +40,13 @@ describe('Utils: response', () => {
   });
 
   describe('paginated()', () => {
-    it('debe responder 200 con data y objeto pagination', () => {
+    it('debe responder 200 con data y objeto meta', () => {
       const data = [{ id: 1 }, { id: 2 }];
-      const pagination = { page: 1, limit: 10, total: 2, totalPages: 1 };
-      paginated(res, data, pagination);
+      const meta = { page: 1, limit: 10, total: 2 };
+      paginated(res, data, meta);
 
       expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({ data, pagination });
+      expect(res.json).toHaveBeenCalledWith({ data, meta });
     });
   });
 

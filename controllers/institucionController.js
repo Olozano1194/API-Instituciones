@@ -10,7 +10,9 @@ const institucionSchema = require('../middleware/validation/schemas/institucionS
 // Obtener todas las instituciones
 const getInstituciones = async (req, res) => {
     try {
-        const { page, limit, skip } = parsePagination(req.query);
+        const pagination = parsePagination(req.query);
+        if (pagination.error) return fail(res, 400, 'BAD_REQUEST', pagination.error);
+        const { page, limit, skip } = pagination;
         const [instituciones, total] = await Promise.all([
             Institucion.find().sort({ createdAt: -1 })
                 .populate('iddepartamento', 'descripcion')
@@ -20,7 +22,7 @@ const getInstituciones = async (req, res) => {
                 .skip(skip).limit(limit),
             Institucion.countDocuments()
         ]);
-        paginated(res, instituciones, { page, limit, total, totalPages: Math.ceil(total / limit) || 1 });
+        paginated(res, instituciones, { page, limit, total });
     } catch (error) {
         logger.error(error, 'Error al obtener instituciones');
         fail(res, 500, 'INTERNAL_ERROR', error.message);
@@ -131,7 +133,7 @@ const deleteInstitucion = async (req, res) => {
         if (!institucionEliminada) {
             return fail(res, 404, 'NOT_FOUND', 'Institución no encontrada');
         }
-        return ok(res, { message: 'Institución eliminada' });
+        return ok(res, null);
     } catch (error) {
         return fail(res, 500, 'INTERNAL_ERROR', error.message);
     }

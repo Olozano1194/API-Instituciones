@@ -6,7 +6,9 @@ const { parsePagination } = require('../utils/pagination');
 
 const getEstudiantes = async (req, res) => {
     try {
-        const { page, limit, skip } = parsePagination(req.query);
+        const pagination = parsePagination(req.query);
+        if (pagination.error) return fail(res, 400, 'BAD_REQUEST', pagination.error);
+        const { page, limit, skip } = pagination;
         const [estudiantes, total] = await Promise.all([
             Estudiante.find().populate('id_usuario', 'email').sort({ createdAt: -1 }).skip(skip).limit(limit),
             Estudiante.countDocuments()
@@ -20,7 +22,7 @@ const getEstudiantes = async (req, res) => {
             telefono: estudiante.telefono,
             email: estudiante.id_usuario?.email
         }));
-        paginated(res, estudiantesFormateados, { page, limit, total, totalPages: Math.ceil(total / limit) || 1 });
+        paginated(res, estudiantesFormateados, { page, limit, total });
     } catch (error) {
         fail(res, 500, 'INTERNAL_ERROR', error.message);
     }
@@ -66,7 +68,7 @@ const updateEstudiante = async (req, res) => {
             { $set: updates },
             { new: true, runValidators: true }
         );
-        return ok(res, { message: 'Estudiante actualizado correctamente', estudiante: estudianteActualizado });
+        return ok(res, estudianteActualizado);
     } catch (error) {
         return fail(res, 400, 'BAD_REQUEST', error.message);
     }
@@ -80,7 +82,7 @@ const deleteEstudiante = async (req, res) => {
         }
         if (!ensureOwnershipOrAdmin(req, res, estudiante.id_usuario)) return;
         await Estudiante.findByIdAndDelete(req.params.id);
-        ok(res, { message: 'Estudiante eliminado' });
+        ok(res, null);
     } catch (error) {
         fail(res, 500, 'INTERNAL_ERROR', error.message);
     }

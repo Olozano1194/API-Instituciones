@@ -6,12 +6,14 @@ const { parsePagination } = require('../utils/pagination');
 
 const getAdministradores = async (req, res) => {
     try {
-        const { page, limit, skip } = parsePagination(req.query);
+        const pagination = parsePagination(req.query);
+        if (pagination.error) return fail(res, 400, 'BAD_REQUEST', pagination.error);
+        const { page, limit, skip } = pagination;
         const [admins, total] = await Promise.all([
             Administrador.find().sort({ createdAt: -1 }).skip(skip).limit(limit),
             Administrador.countDocuments()
         ]);
-        paginated(res, admins, { page, limit, total, totalPages: Math.ceil(total / limit) || 1 });
+        paginated(res, admins, { page, limit, total });
     } catch (error) {
         fail(res, 500, 'INTERNAL_ERROR', error.message);
     }
@@ -57,7 +59,7 @@ const updateAdministrador = async (req, res) => {
             { $set: updates },
             { new: true, runValidators: true }
         );
-        return ok(res, { message: 'Administrador actualizado correctamente', admin: adminActualizado });
+        return ok(res, adminActualizado);
     } catch (error) {
         return fail(res, 400, 'BAD_REQUEST', error.message);
     }
@@ -71,7 +73,7 @@ const deleteAdministrador = async (req, res) => {
         }
         if (!ensureOwnershipOrAdmin(req, res, administrador.id_usuario)) return;
         await Administrador.findByIdAndDelete(req.params.id);
-        ok(res, { message: 'Administrador eliminado' });
+        ok(res, null);
     } catch (error) {
         fail(res, 500, 'INTERNAL_ERROR', error.message);
     }
