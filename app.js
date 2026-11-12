@@ -80,20 +80,19 @@ const startServer = async () => {
         await getDepartamentos();
         await getMunicipio();
 
-        // Definir puerto
-        if (process.env.VERCEL) {
-            // Exporta la aplicación para su uso en otros modulos
-            module.exports = app; // permite que vercel ejecute el servidor
-        } else {
-            // Iniciar el servidor localmente
-            const PORT = process.env.PORT || 5000;
-            app.listen(PORT, () => {
-                console.log(`Servidor corriendo en el puerto http://localhost:${PORT}`);
-            });
-        }
+        // Iniciar el servidor localmente
+        const PORT = process.env.PORT || 5000;
+        app.listen(PORT, () => {
+            console.log(`Servidor corriendo en el puerto http://localhost:${PORT}`);
+        });
     } catch (error) {
         console.error('Error al iniciar el servidor:', error);
         process.exit(1);
-    };
+    }
 };
-startServer();
+
+module.exports = app;
+
+if (require.main === module) {
+    startServer();
+}
