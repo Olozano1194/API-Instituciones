@@ -6,7 +6,9 @@ const { parsePagination } = require('../utils/pagination');
 
 const getProfesores = async (req, res) => {
     try {
-        const { page, limit, skip } = parsePagination(req.query);
+        const pagination = parsePagination(req.query);
+        if (pagination.error) return fail(res, 400, 'BAD_REQUEST', pagination.error);
+        const { page, limit, skip } = pagination;
         const [profesores, total] = await Promise.all([
             Profesor.find().populate('id_usuario', 'email').sort({ createdAt: -1 }).skip(skip).limit(limit),
             Profesor.countDocuments()
@@ -19,7 +21,7 @@ const getProfesores = async (req, res) => {
             telefono: profesor.telefono,
             especialidad: profesor.especialidad
         }));
-        paginated(res, profesoresFormateados, { page, limit, total, totalPages: Math.ceil(total / limit) || 1 });
+        paginated(res, profesoresFormateados, { page, limit, total });
     } catch (error) {
         fail(res, 500, 'INTERNAL_ERROR', error.message);
     }
@@ -32,7 +34,7 @@ const getProfesorById = async (req, res) => {
         if (!profesor) {
             return fail(res, 404, 'NOT_FOUND', 'Profesor no encontrado');
         }
-        ok(res, { teacher: profesor });
+        ok(res, { profile: profesor });
     } catch (error) {
         fail(res, 500, 'INTERNAL_ERROR', error.message);
     }
@@ -65,7 +67,7 @@ const updateProfesor = async (req, res) => {
             { $set: updates },
             { new: true, runValidators: true }
         );
-        return ok(res, { message: 'Profesor actualizado correctamente', profesor: profesorActualizado });
+        return ok(res, profesorActualizado);
     } catch (error) {
         return fail(res, 400, 'BAD_REQUEST', error.message);
     }
@@ -79,7 +81,7 @@ const deleteProfesor = async (req, res) => {
         }
         if (!ensureOwnershipOrAdmin(req, res, profesor.id_usuario)) return;
         await Profesor.findByIdAndDelete(req.params.id);
-        ok(res, { message: 'Profesor eliminado' });
+        ok(res, null);
     } catch (error) {
         fail(res, 500, 'INTERNAL_ERROR', error.message);
     }

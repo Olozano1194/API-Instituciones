@@ -6,12 +6,14 @@ const { parsePagination } = require('../utils/pagination');
 
 const getAdministradores = async (req, res) => {
     try {
-        const { page, limit, skip } = parsePagination(req.query);
+        const pagination = parsePagination(req.query);
+        if (pagination.error) return fail(res, 400, 'BAD_REQUEST', pagination.error);
+        const { page, limit, skip } = pagination;
         const [admins, total] = await Promise.all([
             Administrador.find().sort({ createdAt: -1 }).skip(skip).limit(limit),
             Administrador.countDocuments()
         ]);
-        paginated(res, admins, { page, limit, total, totalPages: Math.ceil(total / limit) || 1 });
+        paginated(res, admins, { page, limit, total });
     } catch (error) {
         fail(res, 500, 'INTERNAL_ERROR', error.message);
     }
@@ -24,7 +26,7 @@ const getAdministradorById = async (req, res) => {
         if (!administrador) {
             return fail(res, 404, 'NOT_FOUND', 'Administrador no encontrado');
         }
-        ok(res, { admin: administrador });
+        ok(res, { profile: administrador });
     } catch (error) {
         fail(res, 500, 'INTERNAL_ERROR', error.message);
     }
@@ -47,16 +49,17 @@ const updateAdministrador = async (req, res) => {
     }
 
     try {
-        const administrador = await Administrador.findById(id);
+        const administrador = await Administrador.findById(id).select('id_usuario');
         if (!administrador) {
             return fail(res, 404, 'NOT_FOUND', 'Administrador no encontrado');
         }
+        if (!ensureOwnershipOrAdmin(req, res, administrador.id_usuario)) return;
         const adminActualizado = await Administrador.findByIdAndUpdate(
             id,
             { $set: updates },
             { new: true, runValidators: true }
         );
-        return ok(res, { message: 'Administrador actualizado correctamente', admin: adminActualizado });
+        return ok(res, adminActualizado);
     } catch (error) {
         return fail(res, 400, 'BAD_REQUEST', error.message);
     }
@@ -64,11 +67,13 @@ const updateAdministrador = async (req, res) => {
 
 const deleteAdministrador = async (req, res) => {
     try {
-        const adminEliminado = await Administrador.findByIdAndDelete(req.params.id);
-        if (!adminEliminado) {
+        const administrador = await Administrador.findById(req.params.id).select('id_usuario');
+        if (!administrador) {
             return fail(res, 404, 'NOT_FOUND', 'Administrador no encontrado');
         }
-        ok(res, { message: 'Administrador eliminado' });
+        if (!ensureOwnershipOrAdmin(req, res, administrador.id_usuario)) return;
+        await Administrador.findByIdAndDelete(req.params.id);
+        ok(res, null);
     } catch (error) {
         fail(res, 500, 'INTERNAL_ERROR', error.message);
     }

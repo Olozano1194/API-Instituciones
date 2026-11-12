@@ -14,6 +14,7 @@ const { getDepartamentos } = require('../controllers/departamentoController');
  * /api/departamentos:
  *   get:
  *     summary: Obtiene lista paginada de todos los departamentos
+ *     description: Obtiene lista paginada de todos los departamentos
  *     tags: [Departamentos]
  *     parameters:
  *       - in: query

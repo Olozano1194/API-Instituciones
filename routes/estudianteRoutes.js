@@ -20,6 +20,7 @@ const {
  * /api/estudiantes:
  *   get:
  *     summary: Obtiene la lista paginada de estudiantes
+ *     description: Obtiene la lista paginada de estudiantes
  *     tags: [Estudiantes]
  *     security:
  *       - bearerAuth: []
@@ -53,6 +54,7 @@ router.get('/', protegerRutas, getEstudiantes);
  * /api/estudiantes/{id}:
  *   put:
  *     summary: Actualiza el perfil de un estudiante (administrador o propietario)
+ *     description: Actualiza el perfil de un estudiante (administrador o propietario)
  *     tags: [Estudiantes]
  *     security:
  *       - bearerAuth: []
@@ -86,6 +88,7 @@ router.put('/:id', protegerRutas, requireRole('admin'), updateEstudiante);
  * /api/estudiantes/{id}:
  *   delete:
  *     summary: Elimina el perfil de un estudiante (administrador o propietario)
+ *     description: Elimina el perfil de un estudiante (administrador o propietario)
  *     tags: [Estudiantes]
  *     security:
  *       - bearerAuth: []

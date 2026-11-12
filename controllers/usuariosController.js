@@ -18,13 +18,15 @@ const usuarioSchema = require('../middleware/validation/schemas/usuarioSchema');
 
 const getUsuarios = async (req, res) => {
     try {
-        const { page, limit, skip } = parsePagination(req.query);
+        const pagination = parsePagination(req.query);
+        if (pagination.error) return fail(res, 400, 'BAD_REQUEST', pagination.error);
+        const { page, limit, skip } = pagination;
         const [usuarios, total] = await Promise.all([
             Usuario.find().select('email rol').populate('rol', 'nombre').sort({ createdAt: -1 }).skip(skip).limit(limit),
             Usuario.countDocuments()
         ]);
         const usuariosFormateados = await Promise.all(usuarios.map(enriquecerUsuario));
-        paginated(res, usuariosFormateados, { page, limit, total, totalPages: Math.ceil(total / limit) || 1 });
+        paginated(res, usuariosFormateados, { page, limit, total });
     } catch (error) {
         fail(res, 500, 'INTERNAL_ERROR', error.message);
     }
@@ -47,7 +49,7 @@ const createUsuario = async (req, res) => {
         if (!rolExistente) return fail(res, 400, 'BAD_REQUEST', 'El rol especificado no existe');
 
         const usuarioExiste = await Usuario.findOne({ email });
-        if (usuarioExiste) return fail(res, 400, 'CONFLICT', 'El email ya está registrado');
+        if (usuarioExiste) return fail(res, 409, 'CONFLICT', 'El email ya está registrado');
 
         // Institución proviene del admin autenticado, no del body.
         const adminUsuario = await Usuario.findById(req.user.id).select('idinstitucion');
@@ -91,15 +93,12 @@ const createUsuario = async (req, res) => {
         }
 
         created(res, {
-            usuario: {
-                id: usuarioGuardado._id,
-                email: usuarioGuardado.email,
-                rol: rolExistente.nombre,
-                idinstitucion
-            }
+            id: usuarioGuardado._id,
+            email: usuarioGuardado.email,
+            rol: rolExistente.nombre
         });
     } catch (error) {
-        if (error.code === 11000) return fail(res, 400, 'CONFLICT', 'El email ya está registrado');
+        if (error.code === 11000) return fail(res, 409, 'CONFLICT', 'El email ya está registrado');
         fail(res, 500, 'INTERNAL_ERROR', 'Error al crear el usuario');
     }
 };
@@ -110,18 +109,11 @@ const getUsuarioById = async (req, res) => {
         const usuario = await Usuario.findById(userId).populate('rol', 'nombre');
         if (!usuario) return fail(res, 404, 'NOT_FOUND', 'Usuario no encontrado');
 
-        const rolNombre = (usuario.rol?.nombre || '').toLowerCase();
-        let profile = null;
-        if (rolNombre.includes('estud')) {
-            profile = await Estudiante.findOne({ id_usuario: userId }).select('nombre apellido fechanacimiento telefono direccion');
-        } else if (rolNombre.includes('docente') || rolNombre.includes('profesor')) {
-            profile = await Profesor.findOne({ id_usuario: userId }).select('nombre apellido telefono especialidad');
-        } else if (rolNombre.includes('admin')) {
-            profile = await Admin.findOne({ id_usuario: userId }).select('nombre apellido telefono cargo');
-        }
         ok(res, {
-            user: { id: usuario._id, email: usuario.email, rol: usuario.rol, fotoPerfil: usuario.fotoPerfil },
-            profile
+            id: usuario._id,
+            email: usuario.email,
+            rol: usuario.rol?.nombre || usuario.rol,
+            fotoPerfil: usuario.fotoPerfil
         });
     } catch (error) {
         fail(res, 500, 'INTERNAL_ERROR', error.message);
@@ -177,7 +169,7 @@ const updateUsuario = async (req, res) => {
             { new: true, runValidators: true }
         );
 
-        return ok(res, { message: 'Usuario actualizado correctamente', usuario: usuarioActualizado });
+        return ok(res, usuarioActualizado);
     } catch (error) {
         logger.error(error, 'Error general updateUsuario');
         if (file) { try { await fsp.unlink(file.path); } catch (_) { } }
@@ -191,7 +183,7 @@ const deleteUsuario = async (req, res) => {
         if (!usuario) return fail(res, 404, 'NOT_FOUND', 'Usuario no encontrado');
         if (!ensureOwnershipOrAdmin(req, res, usuario._id)) return;
         await Usuario.findByIdAndDelete(req.params.id);
-        ok(res, { message: 'Usuario eliminado' });
+        ok(res, null);
     } catch (error) {
         fail(res, 500, 'INTERNAL_ERROR', error.message);
     }
@@ -201,15 +193,15 @@ const loginUsuario = async (req, res) => {
     const { email, password } = req.body;
     try {
         const usuario = await Usuario.findOne({ email }).select('+password').populate('rol', 'nombre');
-        if (!usuario) return fail(res, 404, 'UNAUTHORIZED', 'Credenciales inválidas');
+        if (!usuario) return fail(res, 401, 'UNAUTHORIZED', 'Credenciales inválidas');
         const isValidPassword = await bcrypt.compare(password, usuario.password);
-        if (!isValidPassword) return fail(res, 400, 'UNAUTHORIZED', 'Credenciales inválidas');
+        if (!isValidPassword) return fail(res, 401, 'UNAUTHORIZED', 'Credenciales inválidas');
         const token = jwt.sign(
             { id: usuario._id, rol: usuario.rol?.nombre },
             process.env.JWT_SECRET,
             { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
         );
-        ok(res, { message: 'Inicio de sesión exitoso', token, user: { rol: usuario.rol?.nombre } });
+        ok(res, { token, user: { id: usuario._id, email: usuario.email, rol: usuario.rol?.nombre } });
     } catch (err) {
         fail(res, 500, 'INTERNAL_ERROR', 'Error en el servidor');
     }

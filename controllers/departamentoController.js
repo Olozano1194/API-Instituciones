@@ -4,12 +4,14 @@ const { parsePagination } = require('../utils/pagination');
 
 const getDepartamentos = async (req, res) => {
     try {
-        const { page, limit, skip } = parsePagination(req.query);
+        const pagination = parsePagination(req.query);
+        if (pagination.error) return fail(res, 400, 'BAD_REQUEST', pagination.error);
+        const { page, limit, skip } = pagination;
         const [departamentos, total] = await Promise.all([
             Departamento.find({}, 'id_departamento descripcion').skip(skip).limit(limit),
             Departamento.countDocuments()
         ]);
-        paginated(res, departamentos, { page, limit, total, totalPages: Math.ceil(total / limit) || 1 });
+        paginated(res, departamentos, { page, limit, total });
     } catch (error) {
         fail(res, 500, 'INTERNAL_ERROR', 'Error al obtener los departamentos');
     }

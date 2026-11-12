@@ -26,6 +26,7 @@ const upload = require('../middleware/upload.js');
  * /api/usuarios/login:
  *   post:
  *     summary: Inicia sesión de usuario y retorna token JWT
+ *     description: Inicia sesión de usuario y retorna token JWT
  *     tags: [Usuarios]
  *     requestBody:
  *       required: true
@@ -52,6 +53,7 @@ router.post('/login', loginLimiter, loginUsuario);
  * /api/usuarios:
  *   get:
  *     summary: Obtiene lista paginada de usuarios
+ *     description: Obtiene lista paginada de usuarios
  *     tags: [Usuarios]
  *     security:
  *       - bearerAuth: []
@@ -85,6 +87,7 @@ router.get('/', protegerRutas, getUsuarios);
  * /api/usuarios:
  *   post:
  *     summary: Crea un usuario y su perfil asociado (solo administradores)
+ *     description: Crea un usuario y su perfil asociado (solo administradores)
  *     tags: [Usuarios]
  *     security:
  *       - bearerAuth: []
@@ -111,6 +114,7 @@ router.post('/', protegerRutas, requireRole('admin'), createUsuario);
  * /api/usuarios/me:
  *   get:
  *     summary: Obtiene datos del usuario y perfil autenticado
+ *     description: Obtiene datos del usuario y perfil autenticado
  *     tags: [Usuarios]
  *     security:
  *       - bearerAuth: []
@@ -133,6 +137,7 @@ router.get('/me', protegerRutas, getUsuarioById);
  * /api/usuarios/me:
  *   patch:
  *     summary: Actualiza la foto de perfil del usuario autenticado
+ *     description: Actualiza la foto de perfil del usuario autenticado
  *     tags: [Usuarios]
  *     security:
  *       - bearerAuth: []
@@ -162,6 +167,7 @@ router.patch('/me', protegerRutas, upload.single('fotoPerfil'), updateUsuarioMe)
  * /api/usuarios/{id}:
  *   put:
  *     summary: Actualiza un usuario por ID (administrador o propio usuario)
+ *     description: Actualiza un usuario por ID (administrador o propio usuario)
  *     tags: [Usuarios]
  *     security:
  *       - bearerAuth: []
@@ -198,6 +204,7 @@ router.put('/:id', protegerRutas, upload.single('fotoPerfil'), updateUsuario);
  * /api/usuarios/{id}:
  *   delete:
  *     summary: Elimina un usuario por ID (administrador o propio usuario)
+ *     description: Elimina un usuario por ID (administrador o propio usuario)
  *     tags: [Usuarios]
  *     security:
  *       - bearerAuth: []

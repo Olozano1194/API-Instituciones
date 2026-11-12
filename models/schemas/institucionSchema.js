@@ -171,4 +171,14 @@
  *       properties:
  *         data:
  *           $ref: '#/components/schemas/Institucion'
+ *
+ *     PaginatedInstituciones:
+ *       type: object
+ *       properties:
+ *         data:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/Institucion'
+ *         pagination:
+ *           $ref: '#/components/schemas/Pagination'
  */

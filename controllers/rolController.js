@@ -1,96 +1,89 @@
 const Rol = require('../models/rolModel');
+const { ok, created, paginated, fail } = require('../utils/response');
+const { parsePagination } = require('../utils/pagination');
 
-//Obtener todos los roles
+const ALLOWED_FIELDS = ['nombre', 'descripcion', 'permisos', 'activo'];
+
 const getRoles = async (req, res) => {
     try {
-        const roles = await Rol.find({ activo: true });
-        res.status(200).json(roles);
+        const pagination = parsePagination(req.query);
+        if (pagination.error) return fail(res, 400, 'BAD_REQUEST', pagination.error);
+        const { page, limit, skip } = pagination;
+        const [roles, total] = await Promise.all([
+            Rol.find({ activo: true }).skip(skip).limit(limit),
+            Rol.countDocuments({ activo: true })
+        ]);
+        paginated(res, roles, { page, limit, total });
     } catch (error) {
-        res.status(500).json({ 
-            message: 'Error al obtener roles',
-            error: error.message });
+        fail(res, 500, 'INTERNAL_ERROR', 'Error al obtener roles');
     }
 };
 
-//Obtener un rol por ID
 const getRolById = async (req, res) => {
     try {
         const rol = await Rol.findById(req.params.id);
         if (!rol) {
-            return res.status(404).json({ message: 'Rol no encontrado' });
+            return fail(res, 404, 'NOT_FOUND', 'Rol no encontrado');
         }
-        res.status(200).json(rol);
+        ok(res, rol);
     } catch (error) {
-        res.status(500).json({
-            message: 'Error al obtener rol',
-            error: error.message
-        });
-    };
+        fail(res, 500, 'INTERNAL_ERROR', 'Error al obtener rol');
+    }
 };
-// Crear un rol
+
 const createRol = async (req, res) => {
     try {
-        //Verificamos si el rol existe
-        const rolExiste = await Rol.findOne({ nombre: req.body.nombre.toLowerCase() });
+        const rolExiste = await Rol.findOne({ nombre: (req.body.nombre || '').toLowerCase() });
         if (rolExiste) {
-            return res.status(400).json({ message: "Este rol ya existe" });
-        };
+            return fail(res, 400, 'BAD_REQUEST', 'Este rol ya existe');
+        }
 
-        const nuevoRol = new Rol({
-            nombre: req.body.nombre,
-            descripcion: req.body.descripcion,
-            permisos: req.body.permisos
-        });
-
+        const data = {};
+        for (const key of ALLOWED_FIELDS) {
+            if (Object.prototype.hasOwnProperty.call(req.body, key)) {
+                data[key] = req.body[key];
+            }
+        }
+        const nuevoRol = new Rol(data);
         const rolGuardado = await nuevoRol.save();
-        res.status(201).json(rolGuardado);
+        created(res, rolGuardado);
     } catch (error) {
-        res.status(500).json({
-            message: 'Error al crear rol',
-            error: error.message
-        });
-    };
+        fail(res, 500, 'INTERNAL_ERROR', 'Error al crear rol');
+    }
 };
-// Actualizar un rol
+
 const updateRol = async (req, res) => {
     try {
+        const updates = req.body || {};
+        const unknown = Object.keys(updates).filter((key) => !ALLOWED_FIELDS.includes(key));
+        if (unknown.length > 0) {
+            return fail(res, 400, 'BAD_REQUEST', `Campos no permitidos: ${unknown.join(', ')}`);
+        }
+
         const rolActualizado = await Rol.findByIdAndUpdate(
             req.params.id,
-            {
-                ...req.body,
-                updatedAt: Date.now()
-            },
-            { new: true }
+            { $set: updates },
+            { new: true, runValidators: true }
         );
         if (!rolActualizado) {
-            return res.status(404).json({ message: 'Rol no encontrado' });
-        };
-        res.status(200).json(rolActualizado);
+            return fail(res, 404, 'NOT_FOUND', 'Rol no encontrado');
+        }
+        ok(res, rolActualizado);
     } catch (error) {
-        res.status(500).json({
-            message: 'Error al actualizar rol',
-            error: error.message
-        });
-    };
+        fail(res, 500, 'INTERNAL_ERROR', 'Error al actualizar rol');
+    }
 };
-// Eliminar un rol
+
 const deleteRol = async (req, res) => {
     try {
-        const rolEliminado = await Rol.findByIdAndDelete(
-            req.params.id,
-            { activo: false },
-            { new: true }
-        );
+        const rolEliminado = await Rol.findByIdAndDelete(req.params.id);
         if (!rolEliminado) {
-            return res.status(404).json({ message: 'Rol no encontrado' });
-        };
-        res.status(200).json({ message: 'Rol eliminado con éxito' });
+            return fail(res, 404, 'NOT_FOUND', 'Rol no encontrado');
+        }
+        ok(res, null);
     } catch (error) {
-        res.status(500).json({
-            message: 'Error al eliminar rol',
-            error: error.message
-        });
-    };
+        fail(res, 500, 'INTERNAL_ERROR', 'Error al eliminar rol');
+    }
 };
 
 module.exports = {
@@ -98,5 +91,5 @@ module.exports = {
     getRoles,
     getRolById,
     updateRol,
-    deleteRol    
+    deleteRol
 };

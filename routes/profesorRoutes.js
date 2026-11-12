@@ -20,6 +20,7 @@ const {
  * /api/profesores:
  *   get:
  *     summary: Obtiene la lista paginada de profesores
+ *     description: Obtiene la lista paginada de profesores
  *     tags: [Profesores]
  *     security:
  *       - bearerAuth: []
@@ -53,6 +54,7 @@ router.get('/', protegerRutas, getProfesores);
  * /api/profesores/{id}:
  *   put:
  *     summary: Actualiza el perfil de un profesor (administrador o propietario)
+ *     description: Actualiza el perfil de un profesor (administrador o propietario)
  *     tags: [Profesores]
  *     security:
  *       - bearerAuth: []
@@ -86,6 +88,7 @@ router.put('/:id', protegerRutas, requireRole('admin'), updateProfesor);
  * /api/profesores/{id}:
  *   delete:
  *     summary: Elimina el perfil de un profesor (administrador o propietario)
+ *     description: Elimina el perfil de un profesor (administrador o propietario)
  *     tags: [Profesores]
  *     security:
  *       - bearerAuth: []
