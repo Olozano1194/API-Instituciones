@@ -30,4 +30,12 @@
  *             $ref: '#/components/schemas/Departamentos'
  *         pagination:
  *           $ref: '#/components/schemas/Pagination'
+ *
+ *     Departamento:
+ *       allOf:
+ *         - $ref: '#/components/schemas/Departamentos'
+ *
+ *     PaginatedDepartamento:
+ *       allOf:
+ *         - $ref: '#/components/schemas/PaginatedDepartamentos'
  */

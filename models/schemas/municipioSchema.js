@@ -35,4 +35,12 @@
  *             $ref: '#/components/schemas/Municipios'
  *         pagination:
  *           $ref: '#/components/schemas/Pagination'
+ *
+ *     Municipio:
+ *       allOf:
+ *         - $ref: '#/components/schemas/Municipios'
+ *
+ *     PaginatedMunicipio:
+ *       allOf:
+ *         - $ref: '#/components/schemas/PaginatedMunicipios'
  */
