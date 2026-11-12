@@ -21,9 +21,11 @@ const mapMongooseError = (err) => {
 const errorHandler = (err, req, res, next) => {
   logger.error(err);
 
+  // Errores de CORS deben responder 403, no 500.
+  const isCorsError = err && /origen no permitido por cors/i.test(err.message || '');
   const mapped = mapMongooseError(err);
-  const status = err.status || (mapped ? mapped.status : 500);
-  const code = err.code || (mapped ? mapped.code : 'INTERNAL_ERROR');
+  const status = isCorsError ? 403 : (err.status || (mapped ? mapped.status : 500));
+  const code = isCorsError ? 'FORBIDDEN' : (err.code || (mapped ? mapped.code : 'INTERNAL_ERROR'));
 
   const isProd = process.env.NODE_ENV === 'production';
   const message =

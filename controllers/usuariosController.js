@@ -47,7 +47,7 @@ const createUsuario = async (req, res) => {
         if (!rolExistente) return fail(res, 400, 'BAD_REQUEST', 'El rol especificado no existe');
 
         const usuarioExiste = await Usuario.findOne({ email });
-        if (usuarioExiste) return fail(res, 400, 'CONFLICT', 'El email ya está registrado');
+        if (usuarioExiste) return fail(res, 409, 'CONFLICT', 'El email ya está registrado');
 
         // Institución proviene del admin autenticado, no del body.
         const adminUsuario = await Usuario.findById(req.user.id).select('idinstitucion');
@@ -99,7 +99,7 @@ const createUsuario = async (req, res) => {
             }
         });
     } catch (error) {
-        if (error.code === 11000) return fail(res, 400, 'CONFLICT', 'El email ya está registrado');
+        if (error.code === 11000) return fail(res, 409, 'CONFLICT', 'El email ya está registrado');
         fail(res, 500, 'INTERNAL_ERROR', 'Error al crear el usuario');
     }
 };
@@ -201,9 +201,9 @@ const loginUsuario = async (req, res) => {
     const { email, password } = req.body;
     try {
         const usuario = await Usuario.findOne({ email }).select('+password').populate('rol', 'nombre');
-        if (!usuario) return fail(res, 404, 'UNAUTHORIZED', 'Credenciales inválidas');
+        if (!usuario) return fail(res, 401, 'UNAUTHORIZED', 'Credenciales inválidas');
         const isValidPassword = await bcrypt.compare(password, usuario.password);
-        if (!isValidPassword) return fail(res, 400, 'UNAUTHORIZED', 'Credenciales inválidas');
+        if (!isValidPassword) return fail(res, 401, 'UNAUTHORIZED', 'Credenciales inválidas');
         const token = jwt.sign(
             { id: usuario._id, rol: usuario.rol?.nombre },
             process.env.JWT_SECRET,
