@@ -3,8 +3,6 @@ const dotenv = require('dotenv');
 const path = require('path');
 const { connectDB } = require('./config/db');
 const cors = require('cors');
-const swaggerUi = require("swagger-ui-express");
-const swaggerJsdoc = require("swagger-jsdoc");
 const initRoles = require('./middleware/initRoles');
 const getDepartamentos = require('./middleware/initDepartamento');
 const getMunicipio = require('./middleware/initMunicipio');
@@ -65,34 +63,14 @@ const adminRoutes = require('./routes/adminRoutes');
 app.use('/api/administradores', adminRoutes);
 
 
+// Documentación Swagger / OpenAPI
+const setupSwagger = require('./config/swagger');
+setupSwagger(app);
+
 const errorHandler = require('./middleware/errorHandler');
 
 // Middleware para manejar errores (debe ir al final)
 app.use(errorHandler);
-
-// Configuración de swagger-jsdoc
-const swaggerOptions = {
-    definition: {
-        openapi: "3.0.0", 
-        info: {
-            title: "API de Instituciones Educativas",
-            version: "1.0.0",
-            description: "Documentación de la API para gestionar instituciones educativas",
-        },
-        servers: [
-            {
-                url: `http://localhost:${process.env.PORT || 5000}`,
-            },
-        ],
-    },
-    apis: ["./routes/*.js", "./models/schemas/*.js"]
-};
-
-// Iniciar Swagger en el puerto 5000
-const swaggerSpec = swaggerJsdoc(swaggerOptions);
-
-// Servir documentación Swagger en /api-docs
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 const startServer = async () => {
     try {

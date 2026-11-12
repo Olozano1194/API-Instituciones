@@ -21,17 +21,21 @@ const {
  * @swagger
  * /api/instituciones:
  *   get:
- *     summary: Obtiene todas las instituciones
+ *     summary: Obtiene la lista de instituciones educativas
  *     tags: [Instituciones]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Lista de todas las instituciones
+ *         description: Lista de instituciones
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Institucion'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get('/', protegerRutas, getInstituciones);
 
@@ -39,23 +43,29 @@ router.get('/', protegerRutas, getInstituciones);
  * @swagger
  * /api/instituciones:
  *   post:
- *     summary: Crea una nueva institución
+ *     summary: Crea una nueva institución educativa (solo administradores)
  *     tags: [Instituciones]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Institucion'
+ *             $ref: '#/components/schemas/CreateInstitucionBody'
  *     responses:
  *       201:
  *         description: Institución creada exitosamente
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Institucion'
+ *               $ref: '#/components/schemas/InstitucionResponse'
  *       400:
- *         description: Error en la creación de la institución
+ *         $ref: '#/components/responses/BadRequestError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
  */
 router.post('/', protegerRutas, requireRole('admin'), createInstitucion);
 
@@ -65,13 +75,15 @@ router.post('/', protegerRutas, requireRole('admin'), createInstitucion);
  *   get:
  *     summary: Obtiene una institución por su ID
  *     tags: [Instituciones]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: ID de la institución
+ *         description: ID único de la institución (ObjectId)
  *     responses:
  *       200:
  *         description: Institución encontrada
@@ -79,8 +91,10 @@ router.post('/', protegerRutas, requireRole('admin'), createInstitucion);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Institucion'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  *       404:
- *         description: Institución no encontrada
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.get('/:id', protegerRutas, getInstitucionById);
 
@@ -88,32 +102,38 @@ router.get('/:id', protegerRutas, getInstitucionById);
  * @swagger
  * /api/instituciones/{id}:
  *   put:
- *     summary: Actualiza una institución por su ID
+ *     summary: Actualiza una institución por su ID (solo administradores)
  *     tags: [Instituciones]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: ID de la institución
+ *         description: ID único de la institución (ObjectId)
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Institucion'
+ *             $ref: '#/components/schemas/UpdateInstitucionBody'
  *     responses:
  *       200:
- *         description: Institución actualizada
+ *         description: Institución actualizada exitosamente
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Institucion'
+ *               $ref: '#/components/schemas/InstitucionResponse'
  *       400:
- *         description: Error en la actualización de la institución
+ *         $ref: '#/components/responses/BadRequestError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
  *       404:
- *         description: Institución no encontrada
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.put('/:id', protegerRutas, requireRole('admin'), updateInstitucion);
 
@@ -121,20 +141,26 @@ router.put('/:id', protegerRutas, requireRole('admin'), updateInstitucion);
  * @swagger
  * /api/instituciones/{id}:
  *   delete:
- *     summary: Elimina una institución por su ID
+ *     summary: Elimina una institución por su ID (solo administradores)
  *     tags: [Instituciones]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: ID de la institución
+ *         description: ID único de la institución (ObjectId)
  *     responses:
  *       200:
  *         description: Institución eliminada exitosamente
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
  *       404:
- *         description: Institución no encontrada
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.delete('/:id', protegerRutas, requireRole('admin'), deleteInstitucion);
 
