@@ -32,7 +32,7 @@ const getProfesorById = async (req, res) => {
         if (!profesor) {
             return fail(res, 404, 'NOT_FOUND', 'Profesor no encontrado');
         }
-        ok(res, { teacher: profesor });
+        ok(res, { profile: profesor });
     } catch (error) {
         fail(res, 500, 'INTERNAL_ERROR', error.message);
     }

@@ -33,7 +33,7 @@ const getEstudianteById = async (req, res) => {
         if (!estudiante) {
             return fail(res, 404, 'NOT_FOUND', 'Estudiante no encontrado');
         }
-        ok(res, { student: estudiante });
+        ok(res, { profile: estudiante });
     } catch (error) {
         fail(res, 500, 'INTERNAL_ERROR', error.message);
     }

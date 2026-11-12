@@ -24,7 +24,7 @@ const getAdministradorById = async (req, res) => {
         if (!administrador) {
             return fail(res, 404, 'NOT_FOUND', 'Administrador no encontrado');
         }
-        ok(res, { admin: administrador });
+        ok(res, { profile: administrador });
     } catch (error) {
         fail(res, 500, 'INTERNAL_ERROR', error.message);
     }
