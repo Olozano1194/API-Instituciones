@@ -1,11 +1,13 @@
 const express = require('express');
 const protegerRutas = require('../middleware/proteccionRutas/authMiddleware.js');
+const requireRole = require('../middleware/proteccionRutas/requireRole.js');
 const router = express.Router();
 const {
     getUsuarios,
     createUsuario,
     getUsuarioById,
     updateUsuario,
+    updateUsuarioMe,
     deleteUsuario,
     loginUsuario    
 } = require('../controllers/usuariosController.js');
@@ -59,7 +61,7 @@ router.get('/', protegerRutas,  getUsuarios);
  *       400:
  *         description: Error en la creación del usuario
  */
-router.post('/', createUsuario);
+router.post('/', protegerRutas, requireRole('admin'), createUsuario);
 
 /**
  * @swagger
@@ -85,6 +87,7 @@ router.post('/', createUsuario);
  *         description: Usuario no encontrado
  */
 router.get('/me', protegerRutas, getUsuarioById);
+router.patch('/me', protegerRutas, upload.single('fotoPerfil'), updateUsuarioMe);
 
 /**
  * @swagger
@@ -139,6 +142,5 @@ router.put('/:id', protegerRutas, upload.single('fotoPerfil'), updateUsuario);
  *         description: Usuario no encontrado
  */
 router.delete('/:id', protegerRutas, deleteUsuario);
-
 
 module.exports = router;

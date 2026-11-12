@@ -1,6 +1,7 @@
 const Administrador = require('../models/adminModel');
 const mongoose = require('mongoose');
 const { ok, paginated, fail } = require('../utils/response');
+const ensureOwnershipOrAdmin = require('../utils/ensureOwnershipOrAdmin');
 const { parsePagination } = require('../utils/pagination');
 
 const getAdministradores = async (req, res) => {

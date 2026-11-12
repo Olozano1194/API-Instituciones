@@ -11,7 +11,7 @@ const fsp = fs.promises;
 const path = require('path');
 const enriquecerUsuario = require('../utils/enriquecerUsuario');
 const { ok, created, paginated, fail, noContent } = require('../utils/response');
-const { parsePagination } = require('../utils/pagination');
+const ensureOwnershipOrAdmin = require('../utils/ensureOwnershipOrAdmin');
 const usuarioSchema = require('../middleware/validation/schemas/usuarioSchema');
 
 const getUsuarios = async (req, res) => {
@@ -30,7 +30,7 @@ const getUsuarios = async (req, res) => {
 
 const createUsuario = async (req, res) => {
     try {
-        const { email, password, rol } = req.body;
+        const { email, password, rol, nombre, apellido } = req.body;
 
         if (!email || !password) {
             return fail(res, 400, 'BAD_REQUEST', 'Email y contraseña son requeridos');
@@ -55,6 +55,10 @@ const createUsuario = async (req, res) => {
             return fail(res, 400, 'CONFLICT', 'El email ya está registrado');
         }
 
+        // Institución proviene del admin autenticado, no del body.
+        const adminUsuario = await Usuario.findById(req.user.id).select('idinstitucion');
+        const idinstitucion = adminUsuario?.idinstitucion || null;
+
         const salt = await bcrypt.genSalt(10);
         const hashedPass = await bcrypt.hash(password, salt);
 
@@ -62,53 +66,50 @@ const createUsuario = async (req, res) => {
             email,
             password: hashedPass,
             rol: rolId,
-            idinstitucion: req.body.idinstitucion || null
+            idinstitucion
         });
 
         const usuarioGuardado = await nuevoUsuario.save();
 
-        const token = jwt.sign(
-            { id: usuarioGuardado._id, rol: rolExistente.nombre },
-            process.env.JWT_SECRET,
-            { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-        );
-
         const rolNombre = rolExistente.nombre.toLowerCase();
-        if (rolNombre === 'estudiante') {
-            await Estudiante.create({
-                id_usuario: usuarioGuardado._id,
-                nombre: '',
-                apellido: '',
-                fechanacimiento: req.body.fechanacimiento || new Date(),
-                telefono: '',
-                direccion: ''
-            });
-        } else if (rolNombre === 'docente') {
-            await Profesor.create({
-                id_usuario: usuarioGuardado._id,
-                nombre: '',
-                apellido: '',
-                telefono: '',
-                especialidad: ''
-            });
-        } else if (rolNombre === 'admin') {
-            await Admin.create({
-                id_usuario: usuarioGuardado._id,
-                nombre: '',
-                apellido: '',
-                telefono: '',
-                cargo: ''
-            });
+        const perfilData = { nombre: nombre || '', apellido: apellido || '' };
+        try {
+            if (rolNombre === 'estudiante') {
+                await Estudiante.create({
+                    id_usuario: usuarioGuardado._id,
+                    ...perfilData,
+                    fechanacimiento: req.body.fechanacimiento || new Date(),
+                    telefono: req.body.telefono || '',
+                    direccion: req.body.direccion || ''
+                });
+            } else if (rolNombre === 'docente') {
+                await Profesor.create({
+                    id_usuario: usuarioGuardado._id,
+                    ...perfilData,
+                    telefono: req.body.telefono || '',
+                    especialidad: req.body.especialidad || ''
+                });
+            } else if (rolNombre === 'admin') {
+                await Admin.create({
+                    id_usuario: usuarioGuardado._id,
+                    ...perfilData,
+                    telefono: req.body.telefono || '',
+                    cargo: req.body.cargo || ''
+                });
+            }
+        } catch (profileError) {
+            // Rollback del usuario si falla la creación del perfil
+            await Usuario.findByIdAndDelete(usuarioGuardado._id);
+            return fail(res, 500, 'INTERNAL_ERROR', 'Error al crear el perfil del usuario');
         }
 
         created(res, {
-            message: 'Usuario creado exitosamente',
             usuario: {
                 id: usuarioGuardado._id,
                 email: usuarioGuardado.email,
-                rol: rolExistente.nombre
-            },
-            token
+                rol: rolExistente.nombre,
+                idinstitucion
+            }
         });
     } catch (error) {
         if (error.code === 11000) {
@@ -128,11 +129,11 @@ const getUsuarioById = async (req, res) => {
         const rolNombre = (usuario.rol?.nombre || '').toLowerCase();
         let profile = null;
         if (rolNombre.includes('estud')) {
-            profile = await Estudiante.findOne({ id_usuario: userId });
+            profile = await Estudiante.findOne({ id_usuario: userId }).select('nombre apellido fechanacimiento telefono direccion');
         } else if (rolNombre.includes('docente') || rolNombre.includes('profesor')) {
-            profile = await Profesor.findOne({ id_usuario: userId });
+            profile = await Profesor.findOne({ id_usuario: userId }).select('nombre apellido telefono especialidad');
         } else if (rolNombre.includes('admin')) {
-            profile = await Admin.findOne({ id_usuario: userId });
+            profile = await Admin.findOne({ id_usuario: userId }).select('nombre apellido telefono cargo');
         }
         ok(res, {
             user: {
@@ -173,6 +174,11 @@ const updateUsuario = async (req, res) => {
             return fail(res, 404, 'NOT_FOUND', 'Usuario no encontrado');
         }
 
+        if (!ensureOwnershipOrAdmin(req, res, usuario._id)) {
+            if (file) { try { await fsp.unlink(file.path); } catch (_) { } }
+            return;
+        }
+
         if (file) {
             const oldPublicId = usuario.fotoPerfil?.publicId;
             if (oldPublicId) {
@@ -204,10 +210,12 @@ const updateUsuario = async (req, res) => {
 
 const deleteUsuario = async (req, res) => {
     try {
-        const usuarioEliminado = await Usuario.findByIdAndDelete(req.params.id);
-        if (!usuarioEliminado) {
+        const usuario = await Usuario.findById(req.params.id).select('_id');
+        if (!usuario) {
             return fail(res, 404, 'NOT_FOUND', 'Usuario no encontrado');
         }
+        if (!ensureOwnershipOrAdmin(req, res, usuario._id)) return;
+        await Usuario.findByIdAndDelete(req.params.id);
         ok(res, { message: 'Usuario eliminado' });
     } catch (error) {
         fail(res, 500, 'INTERNAL_ERROR', error.message);
@@ -240,4 +248,10 @@ const loginUsuario = async (req, res) => {
     }
 };
 
-module.exports = { getUsuarios, createUsuario, getUsuarioById, updateUsuario, deleteUsuario, loginUsuario };
+const updateUsuarioMe = async (req, res) => {
+    req.params = req.params || {};
+    req.params.id = req.user.id;
+    return updateUsuario(req, res);
+};
+
+module.exports = { getUsuarios, createUsuario, getUsuarioById, updateUsuario, updateUsuarioMe, deleteUsuario, loginUsuario };
