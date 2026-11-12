@@ -193,4 +193,12 @@
  *                 nullable: true
  *         pagination:
  *           $ref: '#/components/schemas/Pagination'
+ *
+ *     Usuario:
+ *       allOf:
+ *         - $ref: '#/components/schemas/Usuarios'
+ *
+ *     PaginatedUsuario:
+ *       allOf:
+ *         - $ref: '#/components/schemas/PaginatedUsuarios'
  */

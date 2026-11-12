@@ -167,4 +167,12 @@
  *             $ref: '#/components/schemas/Administrador'
  *         pagination:
  *           $ref: '#/components/schemas/Pagination'
+ *
+ *     Admin:
+ *       allOf:
+ *         - $ref: '#/components/schemas/Administrador'
+ *
+ *     PaginatedAdmin:
+ *       allOf:
+ *         - $ref: '#/components/schemas/PaginatedAdministradores'
  */
