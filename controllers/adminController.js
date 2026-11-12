@@ -47,10 +47,11 @@ const updateAdministrador = async (req, res) => {
     }
 
     try {
-        const administrador = await Administrador.findById(id);
+        const administrador = await Administrador.findById(id).select('id_usuario');
         if (!administrador) {
             return fail(res, 404, 'NOT_FOUND', 'Administrador no encontrado');
         }
+        if (!ensureOwnershipOrAdmin(req, res, administrador.id_usuario)) return;
         const adminActualizado = await Administrador.findByIdAndUpdate(
             id,
             { $set: updates },
@@ -64,10 +65,12 @@ const updateAdministrador = async (req, res) => {
 
 const deleteAdministrador = async (req, res) => {
     try {
-        const adminEliminado = await Administrador.findByIdAndDelete(req.params.id);
-        if (!adminEliminado) {
+        const administrador = await Administrador.findById(req.params.id).select('id_usuario');
+        if (!administrador) {
             return fail(res, 404, 'NOT_FOUND', 'Administrador no encontrado');
         }
+        if (!ensureOwnershipOrAdmin(req, res, administrador.id_usuario)) return;
+        await Administrador.findByIdAndDelete(req.params.id);
         ok(res, { message: 'Administrador eliminado' });
     } catch (error) {
         fail(res, 500, 'INTERNAL_ERROR', error.message);
