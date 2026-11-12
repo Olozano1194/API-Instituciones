@@ -1,99 +1,105 @@
 const Estudiante = require('../models/estudiantesModel');
+const mongoose = require('mongoose');
+const { ok, paginated, fail } = require('../utils/response');
+const ensureOwnershipOrAdmin = require('../utils/ensureOwnershipOrAdmin');
+const { parsePagination } = require('../utils/pagination');
 
-
-// Obtener todas los Usuarios
 const getEstudiantes = async (req, res) => {
     try {
-        const estudiantes = await Estudiante.find()
-        .populate('id_usuario', 'email')
-        .sort({ createdAt: -1 });
-        
-        // Formateamos los datos para enviarlos
-        const estudiantesFormateados = estudiantes.map(estudiante => ({
+        const { page, limit, skip } = parsePagination(req.query);
+        const [estudiantes, total] = await Promise.all([
+            Estudiante.find().populate('id_usuario', 'email').sort({ createdAt: -1 }).skip(skip).limit(limit),
+            Estudiante.countDocuments()
+        ]);
+        const estudiantesFormateados = estudiantes.map((estudiante) => ({
             _id: estudiante._id,
             nombre: estudiante.nombre,
             apellido: estudiante.apellido,
             fechanacimiento: estudiante.fechanacimiento,
             direccion: estudiante.direccion,
             telefono: estudiante.telefono,
-            // label: estudiante.nombre + ' ' + estudiante.apellido
-            //     ? `${estudiante.nombre} ${estudiante.apellido}`
-            //     : `Estudiante - ${estudiante.id_usuario?.email} || 'sin email'`,
-            email: estudiante.id_usuario?.email,
-            // completo: !!(estudiante.nombre && estudiante.apellido)
+            email: estudiante.id_usuario?.email
         }));
-        
-        res.status(200).json(estudiantesFormateados);
+        paginated(res, estudiantesFormateados, { page, limit, total, totalPages: Math.ceil(total / limit) || 1 });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        fail(res, 500, 'INTERNAL_ERROR', error.message);
     }
 };
 
-// Obtener un Estudiante por ID
 const getEstudianteById = async (req, res) => {
     try {
         const userId = req.user.id;
-        const estudiante = await Estudiante.findOne({ id_usuario: userId });            
-                
+        const estudiante = await Estudiante.findOne({ id_usuario: userId }).select('nombre apellido fechanacimiento telefono direccion');
         if (!estudiante) {
-            return res.status(404).json({ message: 'Estudiante no encontrado' });
+            return fail(res, 404, 'NOT_FOUND', 'Estudiante no encontrado');
         }
-        
-        res.status(200).json({ student: estudiante });
+        ok(res, { student: estudiante });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        fail(res, 500, 'INTERNAL_ERROR', error.message);
     }
 };
 
-// Actualizar un Estudiante
 const updateEstudiante = async (req, res) => {
-    // console.log('Inicio de actualización');
     const { id } = req.params;
-    const updates = req.body;
-    // console.log('Id:', id);        
-    // console.log('Datos recibidos:', updates);
-            
-    try {
-        const estudiante = await Estudiante.findById(id);
-        if (!estudiante) {        
-            return res.status(404).json({ message: 'Estudiante no encontrado' });
-        }        
+    const updates = req.body || {};
 
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return fail(res, 400, 'BAD_REQUEST', 'Identificador inválido');
+    }
+
+    const forbidden = ['_id', 'id_usuario', 'createdAt', 'updatedAt'];
+    const prohibited = forbidden.filter((field) =>
+        Object.prototype.hasOwnProperty.call(updates, field)
+    );
+    if (prohibited.length > 0) {
+        return fail(res, 400, 'BAD_REQUEST', `Campos no permitidos: ${prohibited.join(', ')}`);
+    }
+
+    try {
+        const estudiante = await Estudiante.findById(id).select('id_usuario');
+        if (!estudiante) {
+            return fail(res, 404, 'NOT_FOUND', 'Estudiante no encontrado');
+        }
+        if (!ensureOwnershipOrAdmin(req, res, estudiante.id_usuario)) return;
         const estudianteActualizado = await Estudiante.findByIdAndUpdate(
             id,
             { $set: updates },
             { new: true, runValidators: true }
         );
-
-        return res.json({
-            message: 'Estudiante actualizado correctamente',
-            estudiante: estudianteActualizado
-        });
+        return ok(res, { message: 'Estudiante actualizado correctamente', estudiante: estudianteActualizado });
     } catch (error) {
-        console.error('❌ Error general updateEstudiante:', error);        
-        return res.status(400).json({
-        message: 'Error al actualizar estudiante',
-        error: error.message
-        });
-    }        
+        return fail(res, 400, 'BAD_REQUEST', error.message);
+    }
 };
 
-// Eliminar un Usuario
 const deleteEstudiante = async (req, res) => {
     try {
-        const estudianteEliminado = await Estudiante.findByIdAndDelete(req.params.id);
-        if (!estudianteEliminado) {
-            return res.status(404).json({ message: 'Estudiante no encontrado' });
+        const estudiante = await Estudiante.findById(req.params.id).select('id_usuario');
+        if (!estudiante) {
+            return fail(res, 404, 'NOT_FOUND', 'Estudiante no encontrado');
         }
-        res.status(200).json({ message: 'Estudiante eliminado' });
+        if (!ensureOwnershipOrAdmin(req, res, estudiante.id_usuario)) return;
+        await Estudiante.findByIdAndDelete(req.params.id);
+        ok(res, { message: 'Estudiante eliminado' });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        fail(res, 500, 'INTERNAL_ERROR', error.message);
     }
+};
+
+const updateEstudianteMe = async (req, res) => {
+    const estudiante = await Estudiante.findOne({ id_usuario: req.user.id }).select('_id');
+    if (!estudiante) {
+        return fail(res, 404, 'NOT_FOUND', 'Estudiante no encontrado');
+    }
+    req.params = req.params || {};
+    req.params.id = estudiante._id.toString();
+    return updateEstudiante(req, res);
 };
 
 module.exports = {
     getEstudiantes,
     getEstudianteById,
     updateEstudiante,
+    updateEstudianteMe,
     deleteEstudiante
 };

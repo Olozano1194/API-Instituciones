@@ -8,13 +8,26 @@
  *         - id_departamento
  *         - descripcion
  *       properties:
+ *         _id:
+ *           type: string
+ *           description: Identificador único en base de datos (ObjectId)
+ *           example: "64f1a2b3c4d5e6f7a8b9c0d2"
  *         id_departamento:
  *           type: string
- *           description: El identificador único del departamento
+ *           description: Código identificador oficial del departamento
+ *           example: "05"
  *         descripcion:
  *           type: string
- *           description: El nombre o descripción del departamento
- *       example:
- *         id_departamento: "01"
- *         descripcion: "Antioquia"
+ *           description: Nombre del departamento
+ *           example: "Antioquia"
+ *
+ *     PaginatedDepartamentos:
+ *       type: object
+ *       properties:
+ *         data:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/Departamentos'
+ *         pagination:
+ *           $ref: '#/components/schemas/Pagination'
  */

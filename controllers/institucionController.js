@@ -2,6 +2,10 @@ const Estudiantes = require('../models/estudiantesModel');
 const Profesor = require('../models/profesorModel');
 const Institucion = require('../models/institucionModel');
 const mongoose = require('mongoose');
+const logger = require('../config/logger');
+const { ok, created, paginated, fail } = require('../utils/response');
+const { parsePagination } = require('../utils/pagination');
+const institucionSchema = require('../middleware/validation/schemas/institucionSchema');
 
 // Obtener todas las instituciones
 const getInstituciones = async (req, res) => {
@@ -14,7 +18,7 @@ const getInstituciones = async (req, res) => {
         
         res.status(200).json(instituciones);
     } catch (error) {
-        console.error('Error al obtener instituciones:', error);
+        logger.error(error, 'Error al obtener instituciones');
         res.status(500).json({ message: error.message });
     }
 };
@@ -68,14 +72,16 @@ const createInstitucion = async (req, res) => {
         
         await institucionGuardada.populate([
             { path: 'estudiantes', select: 'nombre apellido' },
-            { path: 'profesores', select: 'nombre apellido especialidad' }
+            { path: 'profesores', select: 'nombre apellido especialidad' },
+            { path: 'iddepartamento', select: 'descripcion' },
+            { path: 'idmunicipio', select: 'descripcion' }
         ]);
-        res.status(201).json(institucionGuardada);
+        created(res, institucionGuardada);
     } catch (error) {
-        console.error('❌ Error al crear institución:', error);
-        console.error('❌ Error name:', error.name);
-        console.error('❌ Error message:', error.message);
-        console.error('❌ Stack trace:', error.stack);
+        logger.error(error, 'Error al crear institución');
+
+
+
         res.status(400).json({ message: 'Error al crear la institución', error: error.message });
     }
 };
@@ -83,7 +89,9 @@ const createInstitucion = async (req, res) => {
 // Obtener una institución por ID
 const getInstitucionById = async (req, res) => {
     try {
-        const institucion = await Institucion.findById(req.params.id);
+        const institucion = await Institucion.findById(req.params.id)
+        .populate('iddepartamento', 'descripcion')
+        .populate('idmunicipio', 'descripcion');
         if (!institucion) {
             return res.status(404).json({ message: 'Institución no encontrada' });
         }
@@ -95,14 +103,29 @@ const getInstitucionById = async (req, res) => {
 
 // Actualizar una institución
 const updateInstitucion = async (req, res) => {
+    const { id } = req.params;
+    const updates = req.body || {};
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return fail(res, 400, 'BAD_REQUEST', 'Identificador inválido');
+    }
+
+    const allowed = institucionSchema.allowed || [];
+    const unknown = Object.keys(updates).filter((key) => !allowed.includes(key));
+    if (unknown.length > 0) {
+        return fail(res, 400, 'BAD_REQUEST', `Campos no permitidos: ${unknown.join(', ')}`);
+    }
+
     try {
-        const institucionActualizada = await Institucion.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const institucionActualizada = await Institucion.findByIdAndUpdate(id, { $set: updates }, { new: true, runValidators: true })
+            .populate('iddepartamento', 'descripcion')
+            .populate('idmunicipio', 'descripcion');
         if (!institucionActualizada) {
-            return res.status(404).json({ message: 'Institución no encontrada' });
+            return fail(res, 404, 'NOT_FOUND', 'Institución no encontrada');
         }
-        res.status(200).json(institucionActualizada);
+        return ok(res, institucionActualizada);
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        return fail(res, 400, 'BAD_REQUEST', error.message);
     }
 };
 

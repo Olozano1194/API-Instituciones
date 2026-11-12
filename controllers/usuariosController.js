@@ -6,285 +6,219 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const Rol = require('../models/rolModel');
 const mongoose = require('mongoose');
-// const cloudinary = require('../config/cloudinary');
 const fs = require('fs');
 const fsp = fs.promises;
 const path = require('path');
+const logger = require('../config/logger');
+const enriquecerUsuario = require('../utils/enriquecerUsuario');
+const { parsePagination } = require('../utils/pagination');
+const { ok, created, paginated, fail } = require('../utils/response');
+const ensureOwnershipOrAdmin = require('../utils/ensureOwnershipOrAdmin');
+const usuarioSchema = require('../middleware/validation/schemas/usuarioSchema');
 
-
-// Obtener todas los Usuarios
 const getUsuarios = async (req, res) => {
     try {
-        const usuarios = await Usuario.find().sort({ createdAt: -1 });        
-        
-        res.status(200).json(usuarios);
+        const { page, limit, skip } = parsePagination(req.query);
+        const [usuarios, total] = await Promise.all([
+            Usuario.find().select('email rol').populate('rol', 'nombre').sort({ createdAt: -1 }).skip(skip).limit(limit),
+            Usuario.countDocuments()
+        ]);
+        const usuariosFormateados = await Promise.all(usuarios.map(enriquecerUsuario));
+        paginated(res, usuariosFormateados, { page, limit, total, totalPages: Math.ceil(total / limit) || 1 });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        fail(res, 500, 'INTERNAL_ERROR', error.message);
     }
 };
 
-// Crear una nuevo Usuario
 const createUsuario = async (req, res) => {
-    //const nuevoUsuario = new Usuario(req.body);
     try {
-        // console.log('Datos recibidos:', req.body);        
-        //validación
-        const { email, password, rol } = req.body;
-        // console.log('Id del rol recibido:', rol);
+        const { email, password, rol, nombre, apellido } = req.body;
+        if (!email || !password) return fail(res, 400, 'BAD_REQUEST', 'Email y contraseña son requeridos');
+        if (!rol) return fail(res, 400, 'BAD_REQUEST', 'El rol es requerido');
 
-        if (!email || !password) {
-            return res.status(400).json({ message: "Email y contraseña son requeridos" });
-        }
-
-        // Validación de rol (acepta ObjectId o string convertible)
-        if (!rol) {
-            return res.status(400).json({ 
-                message: "El rol es requerido" 
-            });
-        }
         let rolId;
         try {
             rolId = new mongoose.Types.ObjectId(rol);
         } catch (error) {
-            return res.status(400).json({
-                message: "Formato de ID del rol no válido"
-            });            
-        }        
-        // Validar que el rol existe
+            return fail(res, 400, 'BAD_REQUEST', 'Formato de ID del rol no válido');
+        }
+
         const rolExistente = await Rol.findById(rolId);
-        if (!rolExistente) {
-            return res.status(400).json({ 
-                message: 'El rol especificado no existe' 
-            });
-        }      
-        //Verificamos si el usuario ya existe
+        if (!rolExistente) return fail(res, 400, 'BAD_REQUEST', 'El rol especificado no existe');
+
         const usuarioExiste = await Usuario.findOne({ email });
-        if (usuarioExiste) {
-            return res.status(400).json({ message: "El usuario ya existe", details: 'El email ya está registrado' });
-        };
-        //Encriptar manualmente la contraseña antes de guardarla
+        if (usuarioExiste) return fail(res, 400, 'CONFLICT', 'El email ya está registrado');
+
+        // Institución proviene del admin autenticado, no del body.
+        const adminUsuario = await Usuario.findById(req.user.id).select('idinstitucion');
+        const idinstitucion = adminUsuario?.idinstitucion || null;
+
         const salt = await bcrypt.genSalt(10);
         const hashedPass = await bcrypt.hash(password, salt);
 
-        //Crea el nuevo usuario con la contraseña ya encriptada
-        const nuevoUsuario = new Usuario({
-            // nombre,
-            // apellido,
-            email,
-            password: hashedPass,
-            rol: rolId,
-            idinstitucion: req.body.idinstitucion || null
-        });
-
-        // console.log('Intentando guardar usuario:', nuevoUsuario);
-        
+        const nuevoUsuario = new Usuario({ email, password: hashedPass, rol: rolId, idinstitucion });
         const usuarioGuardado = await nuevoUsuario.save();
 
-        //Generar token
-        const token = jwt.sign({ id: usuarioGuardado._id }, process.env.SECRET_KEY, { expiresIn: '24h' });
-
         const rolNombre = rolExistente.nombre.toLowerCase();
-        if (rolNombre === 'estudiante') {
-             // Crear el estudiante asociado automaticamente
-            await Estudiante.create({
-                id_usuario: usuarioGuardado._id,
-                nombre: '',
-                apellido: '',
-                fechanacimiento: req.body.fechanacimiento || new Date(),
-                telefono: '',
-                direccion: ''
-            });
-        } else if (rolNombre === 'docente') {
-            await Profesor.create({
-                id_usuario: usuarioGuardado._id,
-                nombre: '',
-                apellido: '',
-                telefono: '',
-                especialidad: '' 
-            });
-        } else if (rolNombre === 'admin') {
-            await Admin.create({
-                id_usuario: usuarioGuardado._id,
-                nombre: '',
-                apellido: '',
-                telefono: '',
-                cargo: ''
-            });
+        const perfilData = { nombre: nombre || '', apellido: apellido || '' };
+        try {
+            if (rolNombre === 'estudiante') {
+                await Estudiante.create({
+                    id_usuario: usuarioGuardado._id,
+                    ...perfilData,
+                    fechanacimiento: req.body.fechanacimiento || new Date(),
+                    telefono: req.body.telefono || '',
+                    direccion: req.body.direccion || ''
+                });
+            } else if (rolNombre === 'docente') {
+                await Profesor.create({
+                    id_usuario: usuarioGuardado._id,
+                    ...perfilData,
+                    telefono: req.body.telefono || '',
+                    especialidad: req.body.especialidad || ''
+                });
+            } else if (rolNombre === 'admin') {
+                await Admin.create({
+                    id_usuario: usuarioGuardado._id,
+                    ...perfilData,
+                    telefono: req.body.telefono || '',
+                    cargo: req.body.cargo || ''
+                });
+            }
+        } catch (profileError) {
+            await Usuario.findByIdAndDelete(usuarioGuardado._id);
+            return fail(res, 500, 'INTERNAL_ERROR', 'Error al crear el perfil del usuario');
         }
-        
 
-        //Enviamos la respuesta sin el password
-        // const usuarioResponse = usuarioGuardado.toObject();
-        // delete usuarioResponse.password;
-
-        res.status(201).json({
-            message: "Usuario creado exitosamente",
+        created(res, {
             usuario: {
                 id: usuarioGuardado._id,
                 email: usuarioGuardado.email,
-                rol: usuarioGuardado.nombre,
-            },
-            token
+                rol: rolExistente.nombre,
+                idinstitucion
+            }
         });
     } catch (error) {
-        // console.error('Error al crear usuario:', error);        
-        if (error.code === 11000) {
-            return res.status(400).json({
-                message: "El email ya está registrado",
-                details: error.message
-            });
-        }
-        res.status(500).json({
-            message: "Error al crear el usuario",
-            details: error.message
-        });   
+        if (error.code === 11000) return fail(res, 400, 'CONFLICT', 'El email ya está registrado');
+        fail(res, 500, 'INTERNAL_ERROR', 'Error al crear el usuario');
     }
 };
 
-// Obtener un Usuario por ID
 const getUsuarioById = async (req, res) => {
     try {
         const userId = req.user.id;
-        const usuario = await Usuario.findById(userId)
-         .populate('rol', 'nombre');        
-        if (!usuario) {
-            return res.status(404).json({ message: 'Usuario no encontrado' });
+        const usuario = await Usuario.findById(userId).populate('rol', 'nombre');
+        if (!usuario) return fail(res, 404, 'NOT_FOUND', 'Usuario no encontrado');
+
+        const rolNombre = (usuario.rol?.nombre || '').toLowerCase();
+        let profile = null;
+        if (rolNombre.includes('estud')) {
+            profile = await Estudiante.findOne({ id_usuario: userId }).select('nombre apellido fechanacimiento telefono direccion');
+        } else if (rolNombre.includes('docente') || rolNombre.includes('profesor')) {
+            profile = await Profesor.findOne({ id_usuario: userId }).select('nombre apellido telefono especialidad');
+        } else if (rolNombre.includes('admin')) {
+            profile = await Admin.findOne({ id_usuario: userId }).select('nombre apellido telefono cargo');
         }
-        res.status(200).json({
-            user: {
-                id: usuario._id,
-                // nombre: usuario.nombre,
-                // apellido: usuario.apellido,
-                email: usuario.email,                
-                rol: usuario.rol,
-                fotoPerfil: usuario.fotoPerfil,
-            }
+        ok(res, {
+            user: { id: usuario._id, email: usuario.email, rol: usuario.rol, fotoPerfil: usuario.fotoPerfil },
+            profile
         });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        fail(res, 500, 'INTERNAL_ERROR', error.message);
     }
 };
 
-// Actualizar un Usuario
 const updateUsuario = async (req, res) => {
-    // console.log('Inicio de actualización');
     const { id } = req.params;
-    const updates = req.body;
+    const updates = req.body || {};
     const file = req.file;
-    // console.log('Id:', id);        
-    // console.log('Datos recibidos:', updates);
-    // console.log('Archivo recibido:', file);
-        
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        if (file) { try { await fsp.unlink(file.path); } catch (_) { } }
+        return fail(res, 400, 'BAD_REQUEST', 'Identificador inválido');
+    }
+
+    const prohibited = (usuarioSchema.forbidden || []).filter((field) =>
+        Object.prototype.hasOwnProperty.call(updates, field)
+    );
+    if (prohibited.length > 0) {
+        if (file) { try { await fsp.unlink(file.path); } catch (_) { } }
+        return fail(res, 400, 'BAD_REQUEST', `Campos no permitidos: ${prohibited.join(', ')}`);
+    }
+
     try {
         const usuario = await Usuario.findById(id);
         if (!usuario) {
-        if (file) {
-            try { await fsp.unlink(file.path); } catch(_) {}
+            if (file) { try { await fsp.unlink(file.path); } catch (_) { } }
+            return fail(res, 404, 'NOT_FOUND', 'Usuario no encontrado');
         }
-        return res.status(404).json({ message: 'Usuario no encontrado' });
+
+        if (!ensureOwnershipOrAdmin(req, res, usuario._id)) {
+            if (file) { try { await fsp.unlink(file.path); } catch (_) { } }
+            return;
         }
 
         if (file) {
-        const oldPublicId = usuario.fotoPerfil?.publicId;
-        if (oldPublicId) {
-            const oldPath = path.join(__dirname, '..', 'uploads', oldPublicId);
-            try {
-            await fsp.unlink(oldPath);
-            // console.log('Archivo anterior eliminado:', oldPath);
-            } catch (err) {
-            if (err.code !== 'ENOENT') {
-                console.error('Error eliminando anterior:', err);
-            } else {
-                console.log('No existía archivo anterior:', oldPath);
+            const oldPublicId = usuario.fotoPerfil?.publicId;
+            if (oldPublicId) {
+                const oldPath = path.join(__dirname, '..', 'uploads', oldPublicId);
+                try {
+                    await fsp.unlink(oldPath);
+                } catch (err) {
+                    if (err.code !== 'ENOENT') logger.error(err, 'Error eliminando foto anterior');
+                }
             }
-            }
-        }
-
-        updates.fotoPerfil = {
-            url: `/uploads/${file.filename}`,
-            publicId: file.filename
-        };
-        // console.log('Imagen guardada localmente:', updates.fotoPerfil);
+            updates.fotoPerfil = { url: `/uploads/${file.filename}`, publicId: file.filename };
         }
 
         const usuarioActualizado = await Usuario.findByIdAndUpdate(
-        id,
-        { $set: updates },
-        { new: true, runValidators: true }
+            id,
+            { $set: updates },
+            { new: true, runValidators: true }
         );
 
-        return res.json({
-        message: 'Usuario actualizado correctamente',
-        usuario: usuarioActualizado
-        });
+        return ok(res, { message: 'Usuario actualizado correctamente', usuario: usuarioActualizado });
     } catch (error) {
-        console.error('❌ Error general updateUsuario:', error);
-        if (file) {
-        try { await fsp.unlink(file.path); } catch(_) {}
-        }
-        return res.status(400).json({
-        message: 'Error al actualizar usuario',
-        error: error.message
-        });
-    }        
+        logger.error(error, 'Error general updateUsuario');
+        if (file) { try { await fsp.unlink(file.path); } catch (_) { } }
+        return fail(res, 400, 'BAD_REQUEST', error.message);
+    }
 };
 
-// Eliminar un Usuario
 const deleteUsuario = async (req, res) => {
     try {
-        const usuarioEliminado = await Usuario.findByIdAndDelete(req.params.id);
-        if (!usuarioEliminado) {
-            return res.status(404).json({ message: 'Usuario no encontrado' });
-        }
-        res.status(200).json({ message: 'Usuario eliminado' });
+        const usuario = await Usuario.findById(req.params.id).select('_id');
+        if (!usuario) return fail(res, 404, 'NOT_FOUND', 'Usuario no encontrado');
+        if (!ensureOwnershipOrAdmin(req, res, usuario._id)) return;
+        await Usuario.findByIdAndDelete(req.params.id);
+        ok(res, { message: 'Usuario eliminado' });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        fail(res, 500, 'INTERNAL_ERROR', error.message);
     }
 };
 
-// Iniciar sesión
 const loginUsuario = async (req, res) => {
-    //console.log('Datos recibidos en el login:', req.body);    
     const { email, password } = req.body;
-    
     try {
-        //Verficamos si el usuario existe
-        const usuario = await Usuario.findOne({ email }).populate('rol', 'nombre');
-        if  (!usuario) {
-            return res.status(404).json({ message: 'Credenciales inválidas' });
-        }
-        
-        //Verificamos si la contraseña es correcta
-        const isValidPassword = await bcrypt.compare(password,  usuario.password);        
-        if (!isValidPassword) {
-            return res.status(400).json({ message: 'Credenciales inválidas' });
-        }
-        //Generamos un token de acceso
-        const token = jwt.sign({ 
-            id: usuario._id, rol: usuario.rol?.nombre },
-            process.env.SECRET_KEY, { expiresIn: '24h' });
-
-        res.status(200).json({ 
-            message: 'Inicio de sesión exitoso', 
-            token,
-            user: {
-                rol: usuario.rol?.nombre
-            } 
-        });
-
-    }catch (err) {
-        res.status(500).json({ 
-            message: 'Error en el servidor',
-            error: err.message 
-        });
+        const usuario = await Usuario.findOne({ email }).select('+password').populate('rol', 'nombre');
+        if (!usuario) return fail(res, 404, 'UNAUTHORIZED', 'Credenciales inválidas');
+        const isValidPassword = await bcrypt.compare(password, usuario.password);
+        if (!isValidPassword) return fail(res, 400, 'UNAUTHORIZED', 'Credenciales inválidas');
+        const token = jwt.sign(
+            { id: usuario._id, rol: usuario.rol?.nombre },
+            process.env.JWT_SECRET,
+            { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+        );
+        ok(res, { message: 'Inicio de sesión exitoso', token, user: { rol: usuario.rol?.nombre } });
+    } catch (err) {
+        fail(res, 500, 'INTERNAL_ERROR', 'Error en el servidor');
     }
-}
-
-module.exports = {
-    getUsuarios,
-    createUsuario,
-    getUsuarioById,
-    updateUsuario,
-    deleteUsuario,
-    loginUsuario    
 };
+
+const updateUsuarioMe = async (req, res) => {
+    req.params = req.params || {};
+    req.params.id = req.user.id;
+    return updateUsuario(req, res);
+};
+
+module.exports = { getUsuarios, createUsuario, getUsuarioById, updateUsuario, updateUsuarioMe, deleteUsuario, loginUsuario };

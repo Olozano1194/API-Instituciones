@@ -31,7 +31,7 @@ const getRolById = async (req, res) => {
 const createRol = async (req, res) => {
     try {
         //Verificamos si el rol existe
-        const rolExiste = await Rol.findOne({ nombre: req.body.nombre.tolowerCase() });
+        const rolExiste = await Rol.findOne({ nombre: req.body.nombre.toLowerCase() });
         if (rolExiste) {
             return res.status(400).json({ message: "Este rol ya existe" });
         };

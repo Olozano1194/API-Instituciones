@@ -1,95 +1,104 @@
 const Profesor = require('../models/profesorModel');
+const mongoose = require('mongoose');
+const { ok, paginated, fail } = require('../utils/response');
+const ensureOwnershipOrAdmin = require('../utils/ensureOwnershipOrAdmin');
+const { parsePagination } = require('../utils/pagination');
 
-
-// Obtener todas los Usuarios
 const getProfesores = async (req, res) => {
     try {
-        const profesor = await Profesor.find()
-        .populate('id_usuario', 'email')
-        .sort({ createdAt: -1 });        
-        
-        const profesoresFormateados = profesor.map(profesor => ({
+        const { page, limit, skip } = parsePagination(req.query);
+        const [profesores, total] = await Promise.all([
+            Profesor.find().populate('id_usuario', 'email').sort({ createdAt: -1 }).skip(skip).limit(limit),
+            Profesor.countDocuments()
+        ]);
+        const profesoresFormateados = profesores.map((profesor) => ({
             _id: profesor._id,
             nombre: profesor.nombre,
             apellido: profesor.apellido,
-            // label: profesor.nombre + ' ' + profesor.apellido
-            //     ? `${profesor.nombre} ${profesor.apellido}`
-            //     : `Profesor - ${profesor.id_usuario?.email} || 'sin email'`,
             email: profesor.id_usuario?.email,
             telefono: profesor.telefono,
-            especialidad: profesor.especialidad,
-            // completo: !!(profesor.nombre && profesor.apellido)
+            especialidad: profesor.especialidad
         }));
-        res.status(200).json(profesoresFormateados);
+        paginated(res, profesoresFormateados, { page, limit, total, totalPages: Math.ceil(total / limit) || 1 });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        fail(res, 500, 'INTERNAL_ERROR', error.message);
     }
 };
 
-// Obtener un Estudiante por ID
 const getProfesorById = async (req, res) => {
     try {
         const userId = req.user.id;
-        const profesor = await Profesor.findOne({ id_usuario: userId });       
-                
+        const profesor = await Profesor.findOne({ id_usuario: userId }).select('nombre apellido telefono especialidad');
         if (!profesor) {
-            return res.status(404).json({ message: 'Profesor no encontrado' });
-        }        
-        res.status(200).json({ teacher: profesor });
+            return fail(res, 404, 'NOT_FOUND', 'Profesor no encontrado');
+        }
+        ok(res, { teacher: profesor });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        fail(res, 500, 'INTERNAL_ERROR', error.message);
     }
 };
 
-// Actualizar un Estudiante
 const updateProfesor = async (req, res) => {
-    // console.log('Inicio de actualización');
     const { id } = req.params;
-    const updates = req.body;
-    // console.log('Id:', id);        
-    // console.log('Datos recibidos:', updates);
-            
-    try {
-        const profesor = await Profesor.findById(id);
-        if (!profesor) {        
-            return res.status(404).json({ message: 'Profesor no encontrado' });
-        }        
+    const updates = req.body || {};
 
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return fail(res, 400, 'BAD_REQUEST', 'Identificador inválido');
+    }
+
+    const forbidden = ['_id', 'id_usuario', 'createdAt', 'updatedAt'];
+    const prohibited = forbidden.filter((field) =>
+        Object.prototype.hasOwnProperty.call(updates, field)
+    );
+    if (prohibited.length > 0) {
+        return fail(res, 400, 'BAD_REQUEST', `Campos no permitidos: ${prohibited.join(', ')}`);
+    }
+
+    try {
+        const profesor = await Profesor.findById(id).select('id_usuario');
+        if (!profesor) {
+            return fail(res, 404, 'NOT_FOUND', 'Profesor no encontrado');
+        }
+        if (!ensureOwnershipOrAdmin(req, res, profesor.id_usuario)) return;
         const profesorActualizado = await Profesor.findByIdAndUpdate(
             id,
             { $set: updates },
             { new: true, runValidators: true }
         );
-
-        return res.json({
-            message: 'Profesor actualizado correctamente',
-            profesor: profesorActualizado
-        });
+        return ok(res, { message: 'Profesor actualizado correctamente', profesor: profesorActualizado });
     } catch (error) {
-        console.error('❌ Error general updateProfesor:', error);        
-        return res.status(400).json({
-        message: 'Error al actualizar profesor',
-        error: error.message
-        });
-    }        
+        return fail(res, 400, 'BAD_REQUEST', error.message);
+    }
 };
 
-// Eliminar un Usuario
 const deleteProfesor = async (req, res) => {
     try {
-        const profesorEliminado = await Profesor.findByIdAndDelete(req.params.id);
-        if (!profesorEliminado) {
-            return res.status(404).json({ message: 'Profesor no encontrado' });
+        const profesor = await Profesor.findById(req.params.id).select('id_usuario');
+        if (!profesor) {
+            return fail(res, 404, 'NOT_FOUND', 'Profesor no encontrado');
         }
-        res.status(200).json({ message: 'Profesor eliminado' });
+        if (!ensureOwnershipOrAdmin(req, res, profesor.id_usuario)) return;
+        await Profesor.findByIdAndDelete(req.params.id);
+        ok(res, { message: 'Profesor eliminado' });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        fail(res, 500, 'INTERNAL_ERROR', error.message);
     }
+};
+
+const updateProfesorMe = async (req, res) => {
+    const profesor = await Profesor.findOne({ id_usuario: req.user.id }).select('_id');
+    if (!profesor) {
+        return fail(res, 404, 'NOT_FOUND', 'Profesor no encontrado');
+    }
+    req.params = req.params || {};
+    req.params.id = profesor._id.toString();
+    return updateProfesor(req, res);
 };
 
 module.exports = {
     getProfesores,
     getProfesorById,
     updateProfesor,
+    updateProfesorMe,
     deleteProfesor
 };

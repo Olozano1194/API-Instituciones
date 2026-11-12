@@ -1,116 +1,109 @@
 const express = require('express');
 const protegerRutas = require('../middleware/proteccionRutas/authMiddleware.js');
+const requireRole = require('../middleware/proteccionRutas/requireRole.js');
 const router = express.Router();
 const {
     getProfesores,
-    getProfesorById,
     updateProfesor,
-    deleteProfesor      
+    deleteProfesor
 } = require('../controllers/profesorController.js');
-
 
 /**
  * @swagger
  * tags:
- *   name: Usuarios
- *   description: API para gestionar Usuarios de las instituciones educativas
+ *   name: Profesores
+ *   description: API para gestión del perfil de docentes
  */
-/**
- * @swagger
- * /api/usuario:
- *   get:
- *     summary: Obtiene todos los usuarios
- *     tags: [Usuarios]
- *     responses:
- *       200:
- *         description: Lista de todos los usuarios
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/usuariosSchema'
- */
-router.get('/', protegerRutas,  getProfesores);
 
 /**
  * @swagger
- * /api/usuario/{id}:
+ * /api/profesores:
  *   get:
- *     summary: Obtiene un usuario por su ID
- *     tags: [Usuarios]
+ *     summary: Obtiene la lista paginada de profesores
+ *     tags: [Profesores]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
+ *       - in: query
+ *         name: page
  *         schema:
- *           type: string
- *         description: ID del usuario
+ *           type: integer
+ *           default: 1
+ *         description: Número de página
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Límite de elementos por página
  *     responses:
  *       200:
- *         description: Usuario encontrado
+ *         description: Lista paginada de profesores
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/usuarioSchema'
- *       404:
- *         description: Usuario no encontrado
+ *               $ref: '#/components/schemas/PaginatedProfesores'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.get('/me-teacher', protegerRutas, getProfesorById);
+router.get('/', protegerRutas, getProfesores);
 
 /**
  * @swagger
- * /api/usuario/{id}:
+ * /api/profesores/{id}:
  *   put:
- *     summary: Actualiza un usuario por su ID
- *     tags: [Usuarios]
+ *     summary: Actualiza el perfil de un profesor (administrador o propietario)
+ *     tags: [Profesores]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: ID del usuario
+ *         description: ID único del profesor (ObjectId)
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/usuarioSchema'
+ *             $ref: '#/components/schemas/UpdateProfesorBody'
  *     responses:
  *       200:
- *         description: Usuario actualizado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/usuarioSchema'
+ *         description: Profesor actualizado exitosamente
  *       400:
- *         description: Error en la actualización del usuario
+ *         $ref: '#/components/responses/BadRequestError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  *       404:
- *         description: Usuario no encontrado
+ *         $ref: '#/components/responses/NotFoundError'
  */
-router.put('/:id', protegerRutas, updateProfesor);
+router.put('/:id', protegerRutas, requireRole('admin'), updateProfesor);
 
 /**
  * @swagger
- * /api/usuario/{id}:
+ * /api/profesores/{id}:
  *   delete:
- *     summary: Elimina un usuario por su ID
- *     tags: [es]
+ *     summary: Elimina el perfil de un profesor (administrador o propietario)
+ *     tags: [Profesores]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: ID del usuario
+ *         description: ID único del profesor (ObjectId)
  *     responses:
  *       200:
- *         description: Usuario eliminad exitosamente
+ *         description: Profesor eliminado exitosamente
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  *       404:
- *         description: Usuario no encontrado
+ *         $ref: '#/components/responses/NotFoundError'
  */
-router.delete('/:id', protegerRutas, deleteProfesor);
-
+router.delete('/:id', protegerRutas, requireRole('admin'), deleteProfesor);
 
 module.exports = router;

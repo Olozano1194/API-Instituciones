@@ -1,116 +1,109 @@
 const express = require('express');
 const protegerRutas = require('../middleware/proteccionRutas/authMiddleware.js');
+const requireRole = require('../middleware/proteccionRutas/requireRole.js');
 const router = express.Router();
 const {
     getEstudiantes,
-    getEstudianteById,
     updateEstudiante,
-    deleteEstudiante      
+    deleteEstudiante
 } = require('../controllers/estudianteController.js');
-
 
 /**
  * @swagger
  * tags:
- *   name: Usuarios
- *   description: API para gestionar Usuarios de las instituciones educativas
+ *   name: Estudiantes
+ *   description: API para gestión del perfil de estudiantes
  */
-/**
- * @swagger
- * /api/usuario:
- *   get:
- *     summary: Obtiene todos los usuarios
- *     tags: [Usuarios]
- *     responses:
- *       200:
- *         description: Lista de todos los usuarios
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/usuariosSchema'
- */
-router.get('/', protegerRutas,  getEstudiantes);
 
 /**
  * @swagger
- * /api/usuario/{id}:
+ * /api/estudiantes:
  *   get:
- *     summary: Obtiene un usuario por su ID
- *     tags: [Usuarios]
+ *     summary: Obtiene la lista paginada de estudiantes
+ *     tags: [Estudiantes]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
+ *       - in: query
+ *         name: page
  *         schema:
- *           type: string
- *         description: ID del usuario
+ *           type: integer
+ *           default: 1
+ *         description: Número de página
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Límite de elementos por página
  *     responses:
  *       200:
- *         description: Usuario encontrado
+ *         description: Lista paginada de estudiantes
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/usuarioSchema'
- *       404:
- *         description: Usuario no encontrado
+ *               $ref: '#/components/schemas/PaginatedEstudiantes'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.get('/me-student', protegerRutas, getEstudianteById);
+router.get('/', protegerRutas, getEstudiantes);
 
 /**
  * @swagger
- * /api/usuario/{id}:
+ * /api/estudiantes/{id}:
  *   put:
- *     summary: Actualiza un usuario por su ID
- *     tags: [Usuarios]
+ *     summary: Actualiza el perfil de un estudiante (administrador o propietario)
+ *     tags: [Estudiantes]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: ID del usuario
+ *         description: ID único del estudiante (ObjectId)
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/usuarioSchema'
+ *             $ref: '#/components/schemas/UpdateEstudianteBody'
  *     responses:
  *       200:
- *         description: Usuario actualizado
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/usuarioSchema'
+ *         description: Estudiante actualizado exitosamente
  *       400:
- *         description: Error en la actualización del usuario
+ *         $ref: '#/components/responses/BadRequestError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  *       404:
- *         description: Usuario no encontrado
+ *         $ref: '#/components/responses/NotFoundError'
  */
-router.put('/:id', protegerRutas, updateEstudiante);
+router.put('/:id', protegerRutas, requireRole('admin'), updateEstudiante);
 
 /**
  * @swagger
- * /api/usuario/{id}:
+ * /api/estudiantes/{id}:
  *   delete:
- *     summary: Elimina un usuario por su ID
- *     tags: [es]
+ *     summary: Elimina el perfil de un estudiante (administrador o propietario)
+ *     tags: [Estudiantes]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: ID del usuario
+ *         description: ID único del estudiante (ObjectId)
  *     responses:
  *       200:
- *         description: Usuario eliminad exitosamente
+ *         description: Estudiante eliminado exitosamente
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  *       404:
- *         description: Usuario no encontrado
+ *         $ref: '#/components/responses/NotFoundError'
  */
-router.delete('/:id', protegerRutas, deleteEstudiante);
-
+router.delete('/:id', protegerRutas, requireRole('admin'), deleteEstudiante);
 
 module.exports = router;
